@@ -12,7 +12,7 @@
         
         .app-container { display: flex; flex-direction: column; height: 100%; width: 100%; position: relative; }
 
-        /* شريط التحكم العلوي */
+        /* شريط التحكم */
         #browser-toolbar {
             height: 50px; background: white; border-bottom: 1px solid #e2e8f0;
             display: none; align-items: center; justify-content: space-between; padding: 0 15px;
@@ -21,7 +21,6 @@
         .toolbar-btn { background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; padding: 5px 10px; border-radius: 5px; }
         .toolbar-btn:hover { background: #f1f5f9; color: var(--primary-color); }
 
-        /* منطقة العرض */
         .main-view { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
         iframe { width: 100%; flex: 1; border: none; background: #fff; display: block; }
         
@@ -39,7 +38,6 @@
         }
         .bottom-nav::-webkit-scrollbar { display: none; }
 
-        /* التنسيقات العامة */
         .home-header { margin-top: 35px; margin-bottom: 20px; text-align: center; width: 100%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary-color); }
         .home-header h2 { color: #0f172a; margin: 0; font-size: 1.3rem; font-weight: 800; }
         .home-header p { color: #64748b; margin: 5px 0 0; font-size: 0.8rem; }
@@ -62,7 +60,7 @@
         .nav-item.active { color: var(--active-nav); font-weight: bold; }
         .nav-home { color: #334155; border-left: 1px solid #f1f5f9; min-width: 75px; }
         
-        /* Modal */
+        /* Settings Modal */
         .settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; display: none; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
         .settings-content { background: white; width: 95%; max-width: 450px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
         .settings-section { margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
@@ -77,6 +75,7 @@
         .btn-primary { background: #2563eb; color: white; }
         .btn-success { background: #10b981; color: white; }
         .btn-danger { background: #ef4444; color: white; font-size: 0.8rem; width: auto; padding: 5px 10px; }
+        .btn-warning { background: #f59e0b; color: white; }
         .btn-move { background: #e2e8f0; color: #334155; width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; }
         .sortable-item { display: flex; flex-direction: column; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
         .sortable-row-top { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
@@ -137,6 +136,16 @@
                 <button onclick="closeSettings()" style="background:none; border:none; font-size:1.5rem;">&times;</button>
             </div>
             
+            <div class="settings-section" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 15px;">
+                <h4 style="color: #166534;">💾 إدارة البيانات والأمان</h4>
+                <p style="font-size:0.8rem; color:#15803d; margin-bottom:10px;">احفظ نسخة من إعداداتك وبياناتك في حال مسح المتصفح.</p>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="exportData()"><i class="fas fa-download"></i> حفظ نسخة احتياطية</button>
+                    <button class="btn btn-warning" onclick="document.getElementById('import-file').click()"><i class="fas fa-upload"></i> استعادة نسخة</button>
+                    <input type="file" id="import-file" style="display:none" accept=".json" onchange="importData(this)">
+                </div>
+            </div>
+
             <div class="settings-section">
                 <h4>🎨 المظهر</h4>
                 <div class="form-group"><input type="text" id="settings-title" class="form-input" placeholder="العنوان"></div>
@@ -153,7 +162,6 @@
 
             <div class="settings-section">
                 <h4>🔃 الترتيب والشريط السفلي</h4>
-                <p style="font-size:0.8rem; color:#64748b;">(صح) = إظهار في الشريط السفلي</p>
                 <div id="tools-sort-list"></div>
                 <button class="btn btn-primary" onclick="saveToolsSettings()">حفظ التغييرات</button>
                 <button class="btn btn-danger" onclick="resetToolsToDefault()">استعادة الافتراضي</button>
@@ -170,10 +178,10 @@
     </div>
 
     <script>
-        // مفاتيح الذاكرة (V3 Clean)
         const STORAGE_KEY_TOOLS = 'myApp_data_v3_clean'; 
         const STORAGE_KEY_GENERAL = 'myApp_general_v3_clean';
         const STORAGE_KEY_LINKS = 'myApp_links_v3_clean';
+        const STORAGE_KEY_NOTE = 'myApp_quickNote';
 
         const homeScreen = document.getElementById('home-screen');
         const frame = document.getElementById('content-frame');
@@ -189,7 +197,6 @@
             { id: 'monitor', title: 'رصد استراتيجية', icon: 'fa-pen-to-square', color: 'c-teal', url: 'https://abuibrahem2-max.github.io/school-reports/index.html', external: false, inBottomBar: true },
             { id: 'archive', title: 'أرشيف التقارير', icon: 'fa-chart-pie', color: 'c-teal', url: 'https://abuibrahem2-max.github.io/school-reports/index-view.html', external: false, inBottomBar: false },
             { id: 'nafes', title: 'منصة نافس', icon: 'fa-graduation-cap', color: 'c-red', url: 'https://abuibrahem2-max.github.io/nafes/', external: false, inBottomBar: false },
-            // الرابط الذي سبب المشكلة تم تعيينه كـ external: true
             { id: 'health', title: 'التوجيه الصحي', icon: 'fa-heartbeat', color: 'c-pink', url: 'https://sites.google.com/view/ali-aseri/%D8%A7%D9%84%D8%B5%D9%81%D8%AD%D8%A9-%D8%A7%D9%84%D8%B1%D8%A6%D9%8A%D8%B3%D9%8A%D8%A9', external: true, inBottomBar: false },
             { id: 'operational', title: 'الخطة التشغيلية', icon: 'fa-tasks', color: 'c-purple', url: 'operational.html', external: false, inBottomBar: false },
             { id: 'followup', title: 'المتابعة', icon: 'fa-clipboard-check', color: 'c-green', url: 'followup.html', external: false, inBottomBar: true },
@@ -216,48 +223,64 @@
             }
         });
 
-        // --- إدارة التصفح (تم الإصلاح هنا) ---
-        function loadPage(url, element, isExternal = false) {
-            // إذا كان الرابط خارجياً (مثل جوجل سايت)، نفتح نافذة جديدة فوراً
-            if (isExternal) {
-                window.open(url, '_blank');
-                return;
-            }
+        // --- نظام النسخ الاحتياطي (الجديد) ---
+        function exportData() {
+            const dataToSave = {
+                tools: localStorage.getItem(STORAGE_KEY_TOOLS),
+                general: localStorage.getItem(STORAGE_KEY_GENERAL),
+                links: localStorage.getItem(STORAGE_KEY_LINKS),
+                note: localStorage.getItem(STORAGE_KEY_NOTE)
+            };
+            const blob = new Blob([JSON.stringify(dataToSave)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Rashidun_Backup_" + new Date().toISOString().slice(0,10) + ".json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
 
-            // الروابط الداخلية والمنصات الأخرى
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.tools) localStorage.setItem(STORAGE_KEY_TOOLS, data.tools);
+                    if (data.general) localStorage.setItem(STORAGE_KEY_GENERAL, data.general);
+                    if (data.links) localStorage.setItem(STORAGE_KEY_LINKS, data.links);
+                    if (data.note) localStorage.setItem(STORAGE_KEY_NOTE, data.note);
+                    alert("تم استعادة النسخة بنجاح! سيتم تحديث التطبيق الآن.");
+                    location.reload();
+                } catch (err) {
+                    alert("ملف غير صالح.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- التصفح ---
+        function loadPage(url, element, isExternal = false) {
+            if (isExternal) { window.open(url, '_blank'); return; }
             homeScreen.style.display = 'none';
-            browserToolbar.style.display = 'flex'; // إظهار شريط التحكم
-            
-            if (frame.src !== url) { 
-                frame.src = url; 
-                currentUrl = url;
-            }
-            
-            // تحديث الأزرار
+            browserToolbar.style.display = 'flex'; 
+            if (frame.src !== url) { frame.src = url; currentUrl = url; }
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             if (element && element.classList.contains('nav-item')) { element.classList.add('active'); }
         }
-
         function goHome() {
             homeScreen.style.display = 'flex';
-            browserToolbar.style.display = 'none'; // إخفاء الشريط
+            browserToolbar.style.display = 'none';
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             document.querySelector('.nav-home').classList.add('active');
         }
+        function iframeBack() { try { frame.contentWindow.history.back(); } catch(e) {} }
+        function iframeReload() { try { frame.contentWindow.location.reload(); } catch(e) { frame.src = frame.src; } }
+        function openExternal() { if(currentUrl) window.open(currentUrl, '_blank'); }
 
-        function iframeBack() {
-            try { frame.contentWindow.history.back(); } catch(e) { console.log('Back error'); }
-        }
-
-        function iframeReload() {
-            try { frame.contentWindow.location.reload(); } catch(e) { frame.src = frame.src; }
-        }
-
-        function openExternal() {
-            if(currentUrl) window.open(currentUrl, '_blank');
-        }
-
-        // --- تحميل الأدوات والذاكرة ---
+        // --- تحميل البيانات ---
         function loadTools() {
             const savedTools = localStorage.getItem(STORAGE_KEY_TOOLS);
             if (savedTools) {
@@ -270,7 +293,6 @@
             renderMainGrid();
             renderBottomNav();
         }
-
         function renderMainGrid() {
             const grid = document.getElementById('main-tools-grid');
             if(!grid) return;
@@ -283,14 +305,10 @@
                 grid.appendChild(div);
             });
         }
-
         function renderBottomNav() {
             const nav = document.getElementById('bottom-nav-container');
             if(!nav) return;
-            let html = `
-                <button class="nav-item" onclick="openSettings()"> <i class="fas fa-cog"></i><span>الإعدادات</span> </button>
-                <button class="nav-item nav-home active" onclick="goHome()"> <i class="fas fa-th-large"></i><span>الرئيسية</span> </button>
-            `;
+            let html = `<button class="nav-item" onclick="openSettings()"> <i class="fas fa-cog"></i><span>الإعدادات</span> </button> <button class="nav-item nav-home active" onclick="goHome()"> <i class="fas fa-th-large"></i><span>الرئيسية</span> </button>`;
             currentTools.forEach(tool => {
                 if(tool.inBottomBar) {
                     html += `<button class="nav-item" onclick="loadPage('${tool.url}', this, ${tool.external})"> <i class="fas ${tool.icon}"></i><span>${tool.title}</span> </button>`;
@@ -316,32 +334,14 @@
             }
         }
         function closeSettings() { settingsModal.style.display = 'none'; }
-
         function renderToolsSortList() {
             const list = document.getElementById('tools-sort-list');
             if(!list) return;
             list.innerHTML = '';
             currentTools.forEach((tool, index) => {
-                list.innerHTML += `
-                    <div class="sortable-item">
-                        <div class="sortable-row-top">
-                            <input type="text" class="sortable-name-input" id="tool-name-${index}" value="${tool.title}">
-                            <div class="sortable-controls">
-                                <button class="btn btn-move" onclick="moveTool(${index}, -1)">⬆️</button>
-                                <button class="btn btn-move" onclick="moveTool(${index}, 1)">⬇️</button>
-                            </div>
-                        </div>
-                        <div class="sortable-options">
-                            <label style="display:flex; align-items:center; cursor:pointer;">
-                                <input type="checkbox" id="tool-nav-${index}" ${tool.inBottomBar ? 'checked' : ''} style="width:18px; height:18px; margin-left:8px;">
-                                إظهار في الشريط السفلي
-                            </label>
-                        </div>
-                    </div>
-                `;
+                list.innerHTML += `<div class="sortable-item"><div class="sortable-row-top"><input type="text" class="sortable-name-input" id="tool-name-${index}" value="${tool.title}"><div class="sortable-controls"><button class="btn btn-move" onclick="moveTool(${index}, -1)">⬆️</button><button class="btn btn-move" onclick="moveTool(${index}, 1)">⬇️</button></div></div><div class="sortable-options"><label style="display:flex; align-items:center; cursor:pointer;"><input type="checkbox" id="tool-nav-${index}" ${tool.inBottomBar ? 'checked' : ''} style="width:18px; height:18px; margin-left:8px;">إظهار في الشريط السفلي</label></div></div>`;
             });
         }
-
         function moveTool(index, direction) {
             saveTempToolState();
             const newIndex = index + direction;
@@ -352,7 +352,6 @@
                 renderToolsSortList();
             }
         }
-
         function saveTempToolState() {
             currentTools.forEach((tool, index) => {
                 const nameInput = document.getElementById(`tool-name-${index}`);
@@ -361,7 +360,6 @@
                 if(navCheck) tool.inBottomBar = navCheck.checked;
             });
         }
-
         function saveToolsSettings() {
             saveTempToolState();
             localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(currentTools));
@@ -369,7 +367,6 @@
             renderBottomNav();
             alert('تم الحفظ بنجاح!');
         }
-
         function resetToolsToDefault() {
             if(confirm("استعادة الافتراضي؟")) {
                 currentTools = JSON.parse(JSON.stringify(defaultTools));
@@ -379,19 +376,13 @@
                 renderToolsSortList();
             }
         }
-
         function selectColor(color, btn) {
             currentThemeColor = color;
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
         }
         function saveAppearanceSettings() {
-            const settings = {
-                title: document.getElementById('settings-title').value,
-                subtitle: document.getElementById('settings-subtitle')?.value || '',
-                designer: document.getElementById('settings-designer').value,
-                theme: currentThemeColor
-            };
+            const settings = { title: document.getElementById('settings-title').value, subtitle: document.getElementById('settings-subtitle')?.value || '', designer: document.getElementById('settings-designer').value, theme: currentThemeColor };
             localStorage.setItem(STORAGE_KEY_GENERAL, JSON.stringify(settings));
             applyGeneralSettings(settings);
             alert('تم حفظ المظهر!');
@@ -400,11 +391,7 @@
             if(settings.title) document.getElementById('app-title-display').innerText = settings.title;
             if(settings.subtitle) { const sub = document.getElementById('app-subtitle-display'); if(sub) sub.innerText = settings.subtitle; }
             if(settings.designer) document.getElementById('designer-name-display').innerText = settings.designer;
-            if(settings.theme) {
-                currentThemeColor = settings.theme;
-                document.documentElement.style.setProperty('--primary-color', settings.theme);
-                document.documentElement.style.setProperty('--active-nav', settings.theme);
-            }
+            if(settings.theme) { currentThemeColor = settings.theme; document.documentElement.style.setProperty('--primary-color', settings.theme); document.documentElement.style.setProperty('--active-nav', settings.theme); }
         }
         function loadGeneralSettings() {
             const savedData = localStorage.getItem(STORAGE_KEY_GENERAL);
@@ -464,10 +451,10 @@
             try { document.getElementById('hijri-date-display').innerText = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', options).format(date); } catch(e) {}
         }
         function loadNote() {
-            const savedNote = localStorage.getItem('myApp_quickNote');
+            const savedNote = localStorage.getItem(STORAGE_KEY_NOTE);
             if (savedNote && noteInput) noteInput.value = savedNote;
         }
-        if(noteInput) noteInput.addEventListener('input', () => { localStorage.setItem('myApp_quickNote', noteInput.value); });
+        if(noteInput) noteInput.addEventListener('input', () => { localStorage.setItem(STORAGE_KEY_NOTE, noteInput.value); });
     </script>
 </body>
 </html>
