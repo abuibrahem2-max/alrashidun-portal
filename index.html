@@ -7,56 +7,45 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --primary-color: #2563eb; --bg-gradient-start: #f8fafc; --bg-gradient-end: #e2e8f0; --active-nav: #2563eb; }
-        
-        /* إصلاح المشكلة هنا: استخدام dvh لضبط الارتفاع بدقة مع كروم */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100%; height: 100dvh; width: 100%; overflow: hidden; background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        .app-container { width: 100%; height: 100%; position: relative; }
+        .app-container { display: flex; flex-direction: column; height: 100%; width: 100%; position: relative; }
 
-        /* منطقة العرض الرئيسية (تأخذ المساحة العلوية وتترك مكان للشريط السفلي) */
+        /* --- شريط التحكم العلوي (جديد) --- */
+        #browser-toolbar {
+            height: 50px; background: white; border-bottom: 1px solid #e2e8f0;
+            display: none; /* مخفي افتراضياً */
+            align-items: center; justify-content: space-between; padding: 0 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 20;
+        }
+        .toolbar-btn { background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; padding: 5px 10px; border-radius: 5px; }
+        .toolbar-btn:hover { background: #f1f5f9; color: var(--primary-color); }
+        .toolbar-title { font-size: 0.9rem; font-weight: bold; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+
+        /* منطقة العرض */
         .main-view { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            bottom: 65px; /* نترك مسافة لارتفاع الشريط السفلي */
-            overflow: hidden; 
-            z-index: 1;
+            flex: 1; position: relative; overflow: hidden; 
+            display: flex; flex-direction: column;
         }
         
-        iframe { width: 100%; height: 100%; border: none; display: block; background: #fff; }
+        iframe { width: 100%; flex: 1; border: none; background: #fff; display: block; }
         
         #home-screen { 
-            width: 100%; 
-            height: 100%; 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%); 
-            overflow-y: auto; 
-            padding: 20px; 
-            padding-bottom: 80px; /* مسافة أمان إضافية في الأسفل */
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+            overflow-y: auto; padding: 20px; padding-bottom: 80px; z-index: 10; 
+            display: flex; flex-direction: column; align-items: center; 
         }
 
-        /* --- الشريط السفلي (تم تثبيته بالقوة) --- */
         .bottom-nav { 
-            position: fixed; /* تثبيت مطلق */
-            bottom: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 65px; 
-            background: white; 
-            border-top: 1px solid #e2e8f0; 
-            display: flex; 
-            overflow-x: auto; 
-            white-space: nowrap; 
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
-            z-index: 1000; /* طبقة عليا جداً */
+            height: 65px; background: white; border-top: 1px solid #e2e8f0; 
+            display: flex; overflow-x: auto; white-space: nowrap; 
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05); z-index: 30; flex-shrink: 0;
         }
         .bottom-nav::-webkit-scrollbar { display: none; }
 
-        /* باقي التنسيقات كما هي */
+        /* باقي التنسيقات */
         .home-header { margin-top: 35px; margin-bottom: 20px; text-align: center; width: 100%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary-color); }
         .home-header h2 { color: #0f172a; margin: 0; font-size: 1.3rem; font-weight: 800; }
         .home-header p { color: #64748b; margin: 5px 0 0; font-size: 0.8rem; }
@@ -80,6 +69,7 @@
         .nav-item.active { color: var(--active-nav); font-weight: bold; }
         .nav-home { color: #334155; border-left: 1px solid #f1f5f9; min-width: 75px; }
         
+        /* Modal & Form Styles */
         .settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; display: none; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
         .settings-content { background: white; width: 95%; max-width: 450px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
         .settings-section { margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
@@ -106,7 +96,17 @@
 <body>
 
     <div class="app-container">
+        
         <main class="main-view">
+            <div id="browser-toolbar">
+                <button class="toolbar-btn" onclick="goHome()" title="إغلاق والعودة للرئيسية"><i class="fas fa-home"></i></button>
+                <div class="flex gap-2">
+                    <button class="toolbar-btn" onclick="iframeBack()" title="رجوع للخلف"><i class="fas fa-arrow-right"></i></button>
+                    <button class="toolbar-btn" onclick="iframeReload()" title="تحديث"><i class="fas fa-redo"></i></button>
+                    <button class="toolbar-btn" onclick="openExternal()" title="فتح في متصفح خارجي"><i class="fas fa-external-link-alt"></i></button>
+                </div>
+            </div>
+
             <div id="home-screen">
                 <div class="home-header">
                     <h2 id="app-title-display">بوابة الراشدون الرقمية</h2>
@@ -130,11 +130,11 @@
                     <span id="designer-name-display">أ. علي إبراهيم عسيري</span>
                 </div>
             </div>
+
             <iframe id="content-frame" name="app-frame" sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"></iframe>
         </main>
 
-        <nav class="bottom-nav" id="bottom-nav-container">
-            </nav>
+        <nav class="bottom-nav" id="bottom-nav-container"></nav>
     </div>
 
     <div id="settings-modal" class="settings-modal">
@@ -177,7 +177,6 @@
     </div>
 
     <script>
-        // مفاتيح جديدة للذاكرة لضمان بداية نظيفة وتجنب المشاكل السابقة
         const STORAGE_KEY_TOOLS = 'myApp_data_v3_clean'; 
         const STORAGE_KEY_GENERAL = 'myApp_general_v3_clean';
         const STORAGE_KEY_LINKS = 'myApp_links_v3_clean';
@@ -186,10 +185,11 @@
         const frame = document.getElementById('content-frame');
         const settingsModal = document.getElementById('settings-modal');
         const noteInput = document.getElementById('quick-note-input');
+        const browserToolbar = document.getElementById('browser-toolbar');
         let currentThemeColor = '#2563eb';
         let customLinks = [];
+        let currentUrl = '';
 
-        // الأدوات الافتراضية
         const defaultTools = [
             { id: 'platform', title: 'المنصة المدرسية', icon: 'fa-laptop-house', color: 'c-blue', url: 'https://abuibrahem2-max.github.io/my-school-site/', external: false, inBottomBar: true },
             { id: 'monitor', title: 'رصد استراتيجية', icon: 'fa-pen-to-square', color: 'c-teal', url: 'https://abuibrahem2-max.github.io/school-reports/index.html', external: false, inBottomBar: true },
@@ -221,6 +221,45 @@
             }
         });
 
+        // --- إدارة المتصفح والإطار ---
+        function loadPage(url, element, isExternal = false) {
+            // إذا كان الرابط خارجياً تماماً ولا يعمل في Iframe (مثل جوجل سايت أحياناً)
+            // يمكننا فتحه في نافذة جديدة، لكن سنحاول فتحه في التطبيق أولاً مع الشريط العلوي
+            
+            homeScreen.style.display = 'none';
+            browserToolbar.style.display = 'flex'; // إظهار شريط التحكم
+            
+            if (frame.src !== url) { 
+                frame.src = url; 
+                currentUrl = url;
+            }
+            
+            // تحديث حالة الأزرار السفلية
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            if (element && element.classList.contains('nav-item')) { element.classList.add('active'); }
+        }
+
+        function goHome() {
+            homeScreen.style.display = 'flex';
+            browserToolbar.style.display = 'none'; // إخفاء شريط التحكم
+            // frame.src = 'about:blank'; // اختياري: لتفريغ الإطار وتخفيف الذاكرة
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.nav-home').classList.add('active');
+        }
+
+        function iframeBack() {
+            try { frame.contentWindow.history.back(); } catch(e) { console.log('Cannot go back'); }
+        }
+
+        function iframeReload() {
+            try { frame.contentWindow.location.reload(); } catch(e) { frame.src = frame.src; }
+        }
+
+        function openExternal() {
+            if(currentUrl) window.open(currentUrl, '_blank');
+        }
+
+        // --- باقي الوظائف (تحميل الأدوات، الإعدادات، الخ) ---
         function loadTools() {
             const savedTools = localStorage.getItem(STORAGE_KEY_TOOLS);
             if (savedTools) {
@@ -228,12 +267,8 @@
                     currentTools = JSON.parse(savedTools);
                     if(!Array.isArray(currentTools) || currentTools.length === 0) throw new Error("empty");
                     currentTools.forEach(t => { if(t.inBottomBar === undefined) t.inBottomBar = false; });
-                } catch(e) {
-                    currentTools = JSON.parse(JSON.stringify(defaultTools));
-                }
-            } else {
-                currentTools = JSON.parse(JSON.stringify(defaultTools));
-            }
+                } catch(e) { currentTools = JSON.parse(JSON.stringify(defaultTools)); }
+            } else { currentTools = JSON.parse(JSON.stringify(defaultTools)); }
             renderMainGrid();
             renderBottomNav();
         }
@@ -255,19 +290,12 @@
             const nav = document.getElementById('bottom-nav-container');
             if(!nav) return;
             let html = `
-                <button class="nav-item" onclick="openSettings()">
-                    <i class="fas fa-cog"></i><span>الإعدادات</span>
-                </button>
-                <button class="nav-item nav-home active" onclick="goHome()">
-                    <i class="fas fa-th-large"></i><span>الرئيسية</span>
-                </button>
+                <button class="nav-item" onclick="openSettings()"> <i class="fas fa-cog"></i><span>الإعدادات</span> </button>
+                <button class="nav-item nav-home active" onclick="goHome()"> <i class="fas fa-th-large"></i><span>الرئيسية</span> </button>
             `;
             currentTools.forEach(tool => {
                 if(tool.inBottomBar) {
-                    html += `
-                    <button class="nav-item" onclick="loadPage('${tool.url}', this, ${tool.external})">
-                        <i class="fas ${tool.icon}"></i><span>${tool.title}</span>
-                    </button>`;
+                    html += `<button class="nav-item" onclick="loadPage('${tool.url}', this, ${tool.external})"> <i class="fas ${tool.icon}"></i><span>${tool.title}</span> </button>`;
                 }
             });
             nav.innerHTML = html;
@@ -279,18 +307,15 @@
                 const sub = document.getElementById('app-subtitle-display');
                 if(sub) document.getElementById('settings-subtitle').value = sub.innerText;
                 document.getElementById('settings-designer').value = document.getElementById('designer-name-display').innerText;
-                
                 renderToolsSortList();
                 renderSettingsLinksList();
                 settingsModal.style.display = 'flex';
             } catch(e) {
-                // في حالة وجود خطأ، نعيد التحميل الافتراضي بدون رسالة مزعجة
                 currentTools = JSON.parse(JSON.stringify(defaultTools));
                 renderToolsSortList();
                 settingsModal.style.display = 'flex';
             }
         }
-
         function closeSettings() { settingsModal.style.display = 'none'; }
 
         function renderToolsSortList() {
@@ -356,18 +381,6 @@
             }
         }
 
-        function goHome() {
-            homeScreen.style.display = 'flex';
-            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-            document.querySelector('.nav-home').classList.add('active');
-        }
-        function loadPage(url, element, isExternal = false) {
-            if (isExternal) { window.open(url, '_blank'); return; }
-            homeScreen.style.display = 'none';
-            if (frame.src !== url) { frame.src = url; }
-            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-            if (element && element.classList.contains('nav-item')) { element.classList.add('active'); }
-        }
         function selectColor(color, btn) {
             currentThemeColor = color;
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
