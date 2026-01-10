@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المصمم الشامل - المطور (النسخة النهائية)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+
+        :root {
+            --primary: #1e3a8a;   
+            --secondary: #3b82f6; 
+            --text-header: #374151; 
+            --text-school: #1e3a8a;
+            --report-title-c1: #1e3a8a; 
+            --report-title-c2: #3b82f6;
+            --text-title: #1e3a8a;  
+            --text-body: #1f2937;   
+            --text-signatures: #1e3a8a; 
+        }
+
+        body { background-color: #f3f4f6; overflow-x: hidden; }
+
+        /* --- A4 Page Setup --- */
+        .a4-page {
+            width: 210mm;
+            height: 290mm; 
+            background-color: white;
+            margin: 0 auto 20px auto; 
+            padding: 0;
+            position: relative;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column;
+            page-break-after: always;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: 100% 100%;
+        }
+
+        .page-content-layer {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* تنسيقات الصور والشبكة */
+        .img-grid { display: grid; gap: 8px; height: 100%; width: 100%; }
+        .grid-2 { grid-template-columns: 1fr 1fr; }
+        .grid-4 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+        .grid-6 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); }
+        .grid-8 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr); }
+        
+        .img-box {
+            width: 100%; height: 100%; overflow: hidden; position: relative;
+            background: #f8fafc; border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- THEMES --- */
+        .theme-official .page-header { border-bottom: 3px solid var(--primary); background: transparent; }
+        .theme-official .card-box { background: #f8fafc; border-right: 5px solid var(--primary); border-radius: 4px; padding: 10px; margin-bottom: 8px; border: 1px solid #e2e8f0; border-right-width: 5px; }
+        .theme-official .main-title-box { background: linear-gradient(135deg, var(--report-title-c1), var(--report-title-c2)); color: white; padding: 10px 30px; border-radius: 6px; display: inline-block; margin-bottom: 10px; }
+        .theme-official .footer { background: var(--primary); color: white; }
+
+        .theme-luxury .a4-page { background-color: #fffbf2; } 
+        .theme-luxury .page-header { background: linear-gradient(to right, rgba(255,255,255,0.9), rgba(255,255,255,0.9)); border-bottom: 4px solid var(--secondary); }
+        .theme-luxury .card-box { background: #ffffff; border: 1px solid var(--secondary); box-shadow: 5px 5px 0px rgba(212, 175, 55, 0.2); padding: 12px; margin-bottom: 10px; }
+        .theme-luxury .card-title { background: var(--primary); color: var(--secondary); padding: 3px 10px; display: inline-block; font-size: 12px; margin-bottom: 8px; letter-spacing: 1px; }
+        .theme-luxury .main-title-box { border: 2px solid var(--secondary); background: linear-gradient(135deg, var(--report-title-c1), var(--report-title-c2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 10px 40px; background-color: white; position: relative; z-index: 1; }
+        .theme-luxury .footer { background: var(--primary); color: var(--secondary); border-top: 2px solid var(--secondary); }
+
+        .theme-creative .page-header { background: rgba(255,255,255,0.2); border-bottom: 2px dashed var(--secondary); }
+        .theme-creative .card-box { background: #ffffff; border-radius: 16px; padding: 12px; margin-bottom: 10px; border: 1px solid #e5e7eb; border-left: 6px solid var(--secondary); box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); }
+        .theme-creative .card-title { color: var(--secondary); font-weight: 900; display: flex; align-items: center; gap: 6px; }
+        .theme-creative .main-title-box { background: linear-gradient(135deg, var(--report-title-c1), var(--report-title-c2)); color: white; padding: 12px 45px; border-radius: 0 20px 0 20px; box-shadow: 5px 5px 15px rgba(0,0,0,0.1); }
+        .theme-creative .footer { background: linear-gradient(to right, var(--primary), var(--secondary)); color: white; border-radius: 20px 20px 0 0; margin: 0 15px; width: auto; border-top: none; }
+
+        .theme-modern-dark .page-header { background: var(--primary); border-bottom: 4px solid var(--secondary); color: white; }
+        .theme-modern-dark .header-lines p { color: #f3f4f6 !important; }
+        .theme-modern-dark .card-box { background: #fff; border-left: 8px solid var(--primary); padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .theme-modern-dark .card-title { font-weight: 900; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 5px; display: block; margin-bottom: 8px; }
+        .theme-modern-dark .main-title-box { background: linear-gradient(135deg, var(--report-title-c1), var(--report-title-c2)); color: white; padding: 12px 40px; border-radius: 4px; position: relative; overflow: hidden; }
+        .theme-modern-dark .footer { background: var(--primary); color: #e5e7eb; border-top: 4px solid var(--secondary); }
+
+        .theme-professional .page-header { background: rgba(248,250,252,0.8); border-bottom: 1px solid #e2e8f0; }
+        .theme-professional .card-box { background: #fff; border-top: 4px solid var(--secondary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 12px; margin-bottom: 10px; }
+        .theme-professional .card-title { background: #f1f5f9; padding: 4px 10px; display: inline-block; border-radius: 4px; margin-bottom: 8px; font-weight: 800; }
+        .theme-professional .main-title-box { background: linear-gradient(135deg, var(--report-title-c1), var(--report-title-c2)); color: white; padding: 10px 40px; clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%); }
+        .theme-professional .footer { background: #1e293b; color: white; }
+
+        .theme-academic .page-header { border-bottom: 3px double #000; background: rgba(255,255,255,0.95); }
+        .theme-academic .card-box { border: 1px solid #000; padding: 10px; margin-bottom: 10px; background: #fff; }
+        .theme-academic .card-title { border-bottom: 1px solid #000; display: inline-block; padding-bottom: 2px; margin-bottom: 8px; font-weight: bold; }
+        .theme-academic .main-title-box { border: 2px solid #000; color: #000; padding: 8px 40px; font-weight: bold; background: #fff; }
+        .theme-academic .footer { border-top: 1px solid #000; color: #000; background: #fff; font-style: italic; }
+
+        /* Utils */
+        .zoom-controls button { transition: all 0.2s; }
+        .zoom-controls button:hover { transform: scale(1.1); background: #e0e7ff; color: var(--primary); }
+
+        @media print {
+            body { background: white; }
+            #sidebar, .zoom-controls { display: none !important; }
+            .a4-page { margin: 0; box-shadow: none; page-break-after: always; }
+        }
+    </style>
+</head>
+<body class="font-sans h-screen flex overflow-hidden text-gray-800">
+
+    <aside id="sidebar" class="w-[400px] bg-white border-l border-gray-200 flex flex-col h-full z-20 shadow-2xl overflow-y-auto shrink-0">
+        <div class="p-5 bg-gray-900 text-white sticky top-0 z-10 shadow-lg">
+            <h2 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-swatchbook text-yellow-400"></i>
+                المصمم الشامل
+            </h2>
+        </div>
+
+        <div class="p-4 space-y-6 pb-20">
+            
+            <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 shadow-sm">
+                <h3 class="font-bold text-sm text-blue-900 mb-2 flex items-center gap-2">
+                    <i class="fas fa-heading"></i> إعدادات الترويسة والشعارات
+                </h3>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <div class="text-center bg-white p-2 rounded border border-blue-100 hover:border-blue-300 transition cursor-pointer relative">
+                        <p class="text-[10px] font-bold text-gray-500 mb-1">شعار اليمين</p>
+                        <input type="file" accept="image/*" onchange="handleLogoUpload(this, 'right')" class="block w-full text-[9px]">
+                    </div>
+                    <div class="text-center bg-white p-2 rounded border border-blue-100 hover:border-blue-300 transition cursor-pointer relative">
+                        <p class="text-[10px] font-bold text-gray-500 mb-1">شعار اليسار</p>
+                        <input type="file" accept="image/*" onchange="handleLogoUpload(this, 'left')" class="block w-full text-[9px]">
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <input type="text" id="hLine1" oninput="updateHeaderData()" class="w-full text-xs border p-1.5 rounded" value="المملكة العربية السعودية">
+                    <input type="text" id="hLine2" oninput="updateHeaderData()" class="w-full text-xs border p-1.5 rounded" value="وزارة التعليم">
+                    <input type="text" id="hLine3" oninput="updateHeaderData()" class="w-full text-xs border p-1.5 rounded" value="الإدارة العامة للتعليم بمنطقة عسير">
+                    <input type="text" id="hLine4" oninput="updateHeaderData()" class="w-full text-xs border p-1.5 rounded font-bold text-blue-800" value="ابتدائية ومتوسطة الراشدون بالمربع">
+                </div>
+            </div>
+
+            <div class="border rounded-xl p-3 bg-white shadow-sm">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-sm text-gray-700">اختر نمط التقرير</h3>
+                    <div class="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded border border-yellow-200">
+                        <input type="checkbox" id="lockThemeColors" onchange="saveToStorage()" class="w-3 h-3 accent-indigo-600 cursor-pointer">
+                        <label for="lockThemeColors" class="text-[10px] font-bold text-indigo-600 cursor-pointer select-none">تثبيت الألوان</label>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setTheme('theme-official')" class="theme-btn p-2 rounded border hover:bg-gray-50 transition text-center group" data-t="theme-official"><div class="h-6 w-full bg-blue-900 rounded mb-1"></div><span class="text-[10px] font-bold">رسمي</span></button>
+                    <button onclick="setTheme('theme-luxury')" class="theme-btn p-2 rounded border hover:bg-gray-50 transition text-center group" data-t="theme-luxury"><div class="h-6 w-full bg-gray-900 border border-yellow-600 rounded mb-1"></div><span class="text-[10px] font-bold">فاخر</span></button>
+                    <button onclick="setTheme('theme-creative')" class="theme-btn p-2 rounded border hover:bg-gray-50 transition text-center group" data-t="theme-creative"><div class="h-6 w-full bg-gradient-to-r from-blue-400 to-indigo-600 rounded mb-1"></div><span class="text-[10px] font-bold">مبهج</span></button>
+                    <button onclick="setTheme('theme-modern-dark')" class="theme-btn p-2 rounded border hover:bg-gray-50 transition text-center group" data-t="theme-modern-dark"><div class="h-6 w-full bg-gray-800 border-b-4 border-blue-500 rounded mb-1"></div><span class="text-[10px] font-bold">ليلي</span></button>
+                    <button onclick="setTheme('theme-professional')" class="theme-btn p-2 rounded border hover:bg-gray-50 transition text-center group" data-t="theme-professional"><div class="h-6 w-full bg-slate-700 border-t-4 border-blue-500 rounded mb-1"></div><span class="text-[10px] font-bold">احترافي</span></button>
+                    <button onclick="setTheme('theme-academic')" class="theme-btn p-2 rounded border hover:bg-gray-50 transition text-center group" data-t="theme-academic"><div class="h-6 w-full bg-white border border-gray-400 rounded mb-1 flex items-center justify-center"><div class="w-3/4 h-px bg-gray-400"></div></div><span class="text-[10px] font-bold">أكاديمي</span></button>
+                </div>
+            </div>
+
+            <div class="border rounded-xl p-3 bg-white shadow-sm">
+                <h3 class="font-bold text-sm text-purple-800 mb-3 flex items-center gap-2">
+                    <i class="fas fa-book-open"></i> صفحة الغلاف
+                </h3>
+                <div class="flex items-center gap-2 mb-3">
+                    <input type="checkbox" id="hasCoverPage" onchange="updateSettings()" class="w-4 h-4 text-purple-600">
+                    <label for="hasCoverPage" class="text-xs font-bold text-gray-600">إضافة صفحة غلاف مستقلة</label>
+                </div>
+                <div id="coverSettings" class="hidden space-y-2 pl-4 border-r-2 border-purple-100">
+                    
+                    <label class="text-[10px] font-bold text-gray-500 block">تصميم الغلاف</label>
+                    <select id="coverStyle" onchange="updateSettings()" class="w-full p-1.5 text-xs border rounded mb-2">
+                        <option value="cover-liquid">أشكال انسيابية (جديد)</option>
+                        <option value="cover-artistic">إطار زخرفي</option>
+                    </select>
+
+                    <div class="border-2 border-dashed border-purple-200 rounded p-2 text-center bg-purple-50 cursor-pointer hover:bg-purple-100 relative">
+                        <input type="file" accept="image/*" onchange="handleCoverImage(this)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        <p class="text-[10px] font-bold text-purple-600"><i class="fas fa-image"></i> إضافة صورة للغلاف</p>
+                    </div>
+                    <button onclick="clearCoverImage()" class="text-[9px] text-red-500 hover:underline">حذف صورة الغلاف</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500">الرسومات (أساسي)</label>
+                    <input type="color" id="primaryColor" oninput="updateColors()" class="w-full h-8 rounded cursor-pointer border" value="#1e3a8a">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500">الرسومات (ثانوي)</label>
+                    <input type="color" id="secondaryColor" oninput="updateColors()" class="w-full h-8 rounded cursor-pointer border" value="#3b82f6">
+                </div>
+                
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block">لون عنوان التقرير (1)</label>
+                    <input type="color" id="reportTitleColor1" oninput="updateColors()" class="w-full h-6 rounded cursor-pointer border" value="#1e3a8a">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block">لون عنوان التقرير (2)</label>
+                    <input type="color" id="reportTitleColor2" oninput="updateColors()" class="w-full h-6 rounded cursor-pointer border" value="#3b82f6">
+                </div>
+
+                <div class="col-span-2 grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 mt-1">
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500 block">لون نص الترويسة</label>
+                        <input type="color" id="headerTextColor" oninput="updateColors()" class="w-full h-6 rounded cursor-pointer border" value="#374151">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500 block">لون اسم المدرسة</label>
+                        <input type="color" id="schoolNameColor" oninput="updateColors()" class="w-full h-6 rounded cursor-pointer border" value="#1e3a8a">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500 block">لون العناوين الجانبية</label>
+                        <input type="color" id="cardTitleColor" oninput="updateColors()" class="w-full h-6 rounded cursor-pointer border" value="#1e3a8a">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500 block">لون التوقيعات</label>
+                        <input type="color" id="signatureColor" oninput="updateColors()" class="w-full h-6 rounded cursor-pointer border" value="#1e3a8a">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="text-[9px] font-bold text-gray-500 block">لون النص العادي</label>
+                        <input type="color" id="bodyTextColor" oninput="updateColors()" class="w-full h-6 rounded cursor-pointer border" value="#1f2937">
+                    </div>
+                </div>
+
+                <div class="col-span-2">
+                     <label class="text-[10px] font-bold text-gray-500">نوع الخط</label>
+                    <select id="fontFamily" onchange="updateSettings()" class="w-full p-2 text-xs border rounded">
+                        <option value="'Cairo', sans-serif">Cairo (موصى به)</option>
+                        <option value="'Tajawal', sans-serif">Tajawal</option>
+                        <option value="'Amiri', serif">Amiri</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="border rounded-xl p-3 bg-white shadow-sm space-y-3">
+                <h3 class="font-bold text-sm text-gray-700 border-b pb-2">بيانات التقرير</h3>
+                <input type="text" id="reportTitle" oninput="render()" class="w-full border p-2 rounded text-sm font-bold" placeholder="عنوان التقرير...">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="date" id="startDate" oninput="render()" class="w-full border p-1.5 rounded text-xs">
+                    <input type="date" id="endDate" oninput="render()" class="w-full border p-1.5 rounded text-xs">
+                </div>
+
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500">المستهدفون</label>
+                        <input type="text" id="targetAudience" oninput="render()" class="w-full border p-1.5 rounded text-xs" placeholder="مثال: الطلاب">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500">المرحلة</label>
+                        <input type="text" id="gradeLevel" oninput="render()" class="w-full border p-1.5 rounded text-xs" placeholder="مثال: الابتدائية">
+                    </div>
+                     <div>
+                        <label class="text-[9px] font-bold text-gray-500">عدد المشاركين</label>
+                        <input type="text" id="participantCount" oninput="render()" class="w-full border p-1.5 rounded text-xs" placeholder="مثال: 50">
+                    </div>
+                </div>
+
+                <textarea id="objectives" oninput="render()" rows="3" class="w-full border p-2 rounded text-sm" placeholder="الأهداف..."></textarea>
+                <textarea id="description" oninput="render()" rows="3" class="w-full border p-2 rounded text-sm" placeholder="وصف البرنامج..."></textarea>
+                <input type="text" id="evidence" oninput="render()" class="w-full border p-2 rounded text-sm" placeholder="شواهد من الفعالية... (يظهر بجوار العنوان)">
+            </div>
+
+            <div class="border rounded-xl p-3 bg-white shadow-sm space-y-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <input type="text" id="preparerTitleInput" oninput="render()" class="w-full border bg-gray-50 p-1.5 rounded text-[10px] mb-1" value="معد التقرير">
+                        <input type="text" id="preparerName" oninput="render()" class="w-full border p-1.5 rounded text-xs" placeholder="الاسم...">
+                    </div>
+                    <div>
+                        <input type="text" value="مدير المدرسة" disabled class="w-full border bg-gray-100 p-1.5 rounded text-[10px] mb-1">
+                        <input type="text" id="principalName" oninput="render()" class="w-full border p-1.5 rounded text-xs" value="أحمد سالم الشهري">
+                    </div>
+                </div>
+                
+                <div class="border-t pt-2 mt-2">
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">إضافة رابط (باركود) في التذييل</label>
+                    <input type="text" id="qrLink" oninput="render()" class="w-full border p-1.5 rounded text-xs mb-1" placeholder="ضع الرابط هنا (http://...)">
+                    <input type="text" id="qrDesc" oninput="render()" class="w-full border p-1.5 rounded text-xs" placeholder="وصف الرابط (اختياري)">
+                </div>
+            </div>
+
+            <div class="border rounded-xl p-3 bg-white shadow-sm">
+                <div class="mb-3">
+                    <select id="firstPageCount" onchange="render()" class="w-full border p-1.5 rounded text-xs mb-2 bg-gray-50">
+                        <option value="4">4 صور (مستحسن)</option>
+                        <option value="6">6 صور</option>
+                        <option value="2">2 صور كبيرة</option>
+                    </select>
+                    
+                    <div class="flex items-center gap-2 mb-2 bg-gray-50 p-1.5 rounded border">
+                        <input type="checkbox" id="showAppendixHeader" onchange="updateSettings()" checked class="w-3 h-3">
+                        <label for="showAppendixHeader" class="text-[10px] font-bold text-gray-600 cursor-pointer">إظهار الترويسة في صفحات الملاحق</label>
+                    </div>
+
+                    <div class="relative cursor-pointer bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-lg p-3 text-center hover:bg-indigo-100 transition mb-2">
+                        <input type="file" multiple accept="image/*" onchange="handleImageUpload(this)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        <p class="text-xs font-bold text-indigo-600">رفع الصور</p>
+                        <span id="imgCountLabel" class="text-[10px] text-gray-500 block">0 صور</span>
+                    </div>
+                    <button onclick="clearImages()" class="w-full bg-red-50 text-red-600 hover:bg-red-100 py-1.5 rounded border border-red-200 text-xs font-bold transition">
+                        <i class="fas fa-trash-alt ml-1"></i> حذف جميع الصور
+                    </button>
+                    
+                     <button onclick="resetApp()" class="w-full mt-2 bg-gray-800 text-white hover:bg-black py-1.5 rounded border border-gray-900 text-xs font-bold transition">
+                        <i class="fas fa-redo-alt ml-1"></i> إعادة ضبط المصنع (إذا علقت الألوان)
+                    </button>
+                </div>
+                
+                <div class="mb-2 border-t pt-2 mt-2 bg-gradient-to-br from-indigo-50 to-blue-50 p-2 rounded border border-indigo-200 shadow-md">
+                    <label class="text-[10px] font-bold text-indigo-900 block mb-1">وجهة حفظ التقرير:</label>
+                    
+                    <select id="finalDestination" onchange="toggleSubFolderInput()" class="w-full border border-indigo-200 p-2 rounded text-xs mb-2 bg-white font-bold text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <optgroup label="📂 ملفاتي في الدرايف">
+                            <option value="dev">📈 التطوير المهني</option>
+                            <option value="teaching">📚 التدريس</option>
+                            <option value="guidance">🤝 التوجيه الطلابي</option>
+                            <option value="activity">⚽ النشاط الطلابي</option>
+                            <option value="nafs">🧠 نواتج التعلم (نافس)</option>
+                            <option value="tests">📊 الاختبارات وتحليل النتائج</option>
+                            <option value="health">🩺 التوجيه الصحي</option>
+                        </optgroup>
+                        <optgroup label="💻 محلي">
+                            <option value="local_pc">💾 جهازي / OneDrive / USB</option>
+                        </optgroup>
+                    </select>
+                
+                    <div id="subFolderArea" class="hidden mb-2 animate-pulse">
+                        <input type="text" id="subFolderName" class="w-full border border-indigo-300 p-2 rounded text-xs bg-white text-indigo-900 placeholder-indigo-400 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="اكتب اسم المجلد الفرعي (مثلاً: الأسبوع الثالث)...">
+                    </div>
+                    
+                    <button onclick="executeAction()" id="actionBtn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2.5 rounded shadow-md text-xs font-bold flex items-center justify-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition transform active:scale-95">
+                        <i id="btnIcon" class="fas fa-paper-plane"></i> 
+                        <span id="btnText">تنفيذ الإجراء</span>
+                    </button>
+                    
+                    <div id="actionStatus" class="text-[10px] font-bold text-center mt-2 min-h-[15px]"></div>
+                </div>
+                </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 bg-gray-200 h-full overflow-y-auto relative flex flex-col items-center py-8 scroll-smooth">
+        <div class="fixed bottom-6 left-6 bg-white rounded-full shadow-xl p-1.5 z-30 flex gap-2 zoom-controls border border-gray-200">
+            <button onclick="adjustZoom(-0.1)" class="w-8 h-8 rounded-full hover:bg-gray-100 font-bold">-</button>
+            <span id="zoomLevel" class="flex items-center text-xs font-bold w-10 justify-center">100%</span>
+            <button onclick="adjustZoom(0.1)" class="w-8 h-8 rounded-full hover:bg-gray-100 font-bold">+</button>
+        </div>
+        <div id="report-content" class="origin-top transition-transform duration-200 shadow-2xl"></div>
+    </main>
+
+    <script>
+        let appState = {
+            config: {
+                primary: '#1e3a8a',
+                secondary: '#3b82f6',
+                headerTextColor: '#374151',
+                schoolNameColor: '#1e3a8a', 
+                reportTitleColor1: '#1e3a8a', 
+                reportTitleColor2: '#3b82f6', 
+                cardTitleColor: '#1e3a8a',
+                bodyTextColor: '#1f2937',
+                signatureColor: '#1e3a8a', 
+                font: "'Cairo', sans-serif",
+                theme: 'theme-official',
+                firstPageImgCount: 4,
+                hasCoverPage: false,
+                coverStyle: 'cover-liquid',
+                showAppendixHeader: true,
+                lockColors: false,
+                coverSvgData: '', 
+                internalSvgData: ''
+            },
+            header: {
+                rightLogo: null,
+                leftLogo: null,
+                lines: ["المملكة العربية السعودية", "وزارة التعليم", "الإدارة العامة للتعليم بمنطقة عسير", "ابتدائية ومتوسطة الراشدون بالمربع"]
+            },
+            data: {
+                title: "تقرير اليوم العالمي",
+                startDate: "",
+                endDate: "",
+                targetAudience: "",
+                gradeLevel: "",        
+                participantCount: "", 
+                objectives: "",
+                description: "",
+                evidence: "",
+                preparerTitle: "معد التقرير",
+                preparerName: "",
+                principalName: "أحمد سالم الشهري",
+                qrLink: "",
+                qrDesc: "",
+                coverImage: null,
+                images: []
+            }
+        };
+
+        const themeColors = {
+            'theme-official': { primary: '#1e3a8a', secondary: '#3b82f6', headerTxt: '#374151', schoolTxt: '#1e3a8a', title1: '#1e3a8a', title2: '#1e3a8a', card: '#1e3a8a', body: '#1f2937', sig: '#1e3a8a' },
+            'theme-luxury': { primary: '#1a1a1a', secondary: '#d4af37', headerTxt: '#f0f0f0', schoolTxt: '#d4af37', title1: '#d4af37', title2: '#bfa136', card: '#d4af37', body: '#1f2937', sig: '#d4af37' },
+            'theme-creative': { primary: '#4f46e5', secondary: '#06b6d4', headerTxt: '#374151', schoolTxt: '#4f46e5', title1: '#4f46e5', title2: '#06b6d4', card: '#06b6d4', body: '#1f2937', sig: '#4f46e5' },
+            'theme-modern-dark': { primary: '#111827', secondary: '#f59e0b', headerTxt: '#f3f4f6', schoolTxt: '#f59e0b', title1: '#111827', title2: '#1f2937', card: '#111827', body: '#1f2937', sig: '#111827' },
+            'theme-professional': { primary: '#1e293b', secondary: '#3b82f6', headerTxt: '#374151', schoolTxt: '#1e293b', title1: '#1e293b', title2: '#1e293b', card: '#1e293b', body: '#1f2937', sig: '#1e293b' },
+            'theme-academic': { primary: '#000000', secondary: '#444444', headerTxt: '#000000', schoolTxt: '#000000', title1: '#000000', title2: '#000000', card: '#000000', body: '#000000', sig: '#000000' }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            syncUI();
+            render();
+            toggleSubFolderInput(); 
+        });
+
+        function resetApp() {
+            if(confirm('هل أنت متأكد من حذف جميع الإعدادات والبدء من جديد؟')) {
+                localStorage.removeItem('rep_v19_conf');
+                localStorage.removeItem('rep_v19_head');
+                window.location.reload();
+            }
+        }
+
+        function svgToBase64(svgXml) {
+            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgXml)));
+        }
+
+        function updateCoverSvg() {
+            const p = appState.config.primary;
+            const s = appState.config.secondary;
+            
+            if (appState.config.coverStyle === 'cover-liquid') {
+                const coverXml = `
+                <svg width="1000" height="1400" viewBox="0 0 1000 1400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0,0 L1000,0 L1000,250 C800,350 600,100 400,250 C200,350 0,150 0,150 Z" fill="${p}" fill-opacity="0.15" />
+                    <path d="M0,0 L1000,0 L1000,180 C850,220 550,80 250,200 C100,240 0,180 0,180 Z" fill="${p}" fill-opacity="0.2" />
+                    
+                    <path d="M0,1400 L1000,1400 L1000,1100 C800,1250 600,1000 400,1150 C200,1250 0,1100 0,1100 Z" fill="${s}" fill-opacity="0.15" />
+                    <path d="M0,1400 L1000,1400 L1000,1200 C750,1300 500,1100 250,1250 C100,1300 0,1250 0,1250 Z" fill="${s}" fill-opacity="0.2" />
+                    
+                    <circle cx="900" cy="150" r="80" fill="${s}" fill-opacity="0.1" />
+                    <circle cx="100" cy="1250" r="100" fill="${p}" fill-opacity="0.1" />
+                </svg>`;
+                appState.config.coverSvgData = svgToBase64(coverXml);
+                
+                const internalXml = `
+                <svg width="1000" height="1400" viewBox="0 0 1000 1400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0,0 L1000,0 L1000,120 C700,160 400,40 0,100 Z" fill="${p}" fill-opacity="0.15" />
+                    <path d="M0,0 L1000,0 L1000,80 C600,120 300,20 0,60 Z" fill="${s}" fill-opacity="0.1" />
+                    
+                    <path d="M0,1400 L1000,1400 L1000,1300 C600,1250 300,1350 0,1280 Z" fill="${s}" fill-opacity="0.08" />
+                    <path d="M0,1400 L1000,1400 L1000,1340 C700,1300 400,1380 0,1340 Z" fill="${p}" fill-opacity="0.05" />
+                </svg>`;
+                appState.config.internalSvgData = svgToBase64(internalXml);
+            } 
+            else if (appState.config.coverStyle === 'cover-artistic') {
+                const coverXml = `
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="20" y="20" width="95%" height="96%" rx="20" ry="20" fill="none" stroke="${p}" stroke-width="8" stroke-dasharray="15,10" />
+                    <rect x="35" y="35" width="92%" height="94%" rx="15" ry="15" fill="none" stroke="${s}" stroke-width="2" />
+                    <path d="M0,0 L150,150" stroke="${p}" stroke-width="5" stroke-opacity="0.15" />
+                    <path d="M100%,100% L800,900" stroke="${p}" stroke-width="5" stroke-opacity="0.15" />
+                </svg>`;
+                appState.config.coverSvgData = svgToBase64(coverXml);
+                
+                const internalXml = `
+                 <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100%" cy="0" r="200" fill="${p}" fill-opacity="0.1" />
+                    <circle cx="0" cy="100%" r="200" fill="${s}" fill-opacity="0.1" />
+                 </svg>`;
+                 appState.config.internalSvgData = svgToBase64(internalXml);
+            }
+        }
+
+        function render() {
+            appState.data.title = document.getElementById('reportTitle').value || 'عنوان التقرير';
+            appState.data.startDate = document.getElementById('startDate').value;
+            appState.data.endDate = document.getElementById('endDate').value;
+            appState.data.targetAudience = document.getElementById('targetAudience').value; 
+            appState.data.gradeLevel = document.getElementById('gradeLevel').value;  
+            appState.data.participantCount = document.getElementById('participantCount').value; 
+            appState.data.objectives = document.getElementById('objectives').value;
+            appState.data.description = document.getElementById('description').value;
+            appState.data.evidence = document.getElementById('evidence').value;
+            appState.data.preparerTitle = document.getElementById('preparerTitleInput').value || 'معد التقرير';
+            appState.data.preparerName = document.getElementById('preparerName').value;
+            appState.data.principalName = document.getElementById('principalName').value;
+            appState.data.qrLink = document.getElementById('qrLink').value;
+            appState.data.qrDesc = document.getElementById('qrDesc').value;
+            
+            appState.config.firstPageImgCount = parseInt(document.getElementById('firstPageCount').value);
+
+            const container = document.getElementById('report-content');
+            container.innerHTML = '';
+            container.className = `origin-top transition-transform duration-200 shadow-2xl ${appState.config.theme}`;
+            container.style.fontFamily = appState.config.font;
+            
+            updateCoverSvg();
+
+            if(appState.config.hasCoverPage) {
+                const cover = document.createElement('div');
+                cover.className = `a4-page`;
+                cover.style.backgroundImage = `url('${appState.config.coverSvgData}')`;
+                cover.innerHTML = generateCoverHTML();
+                container.appendChild(cover);
+            }
+
+            const page1 = document.createElement('div');
+            page1.className = 'a4-page';
+            page1.style.backgroundImage = `url('${appState.config.internalSvgData}')`;
+
+            let evidenceSectionHTML = '';
+            if(appState.data.evidence) {
+                evidenceSectionHTML = `
+                    <div class="card-box !pb-2">
+                        <div class="card-title !mb-0 flex items-center flex-wrap w-full">
+                            <span class="flex items-center shrink-0">
+                                <i class="fas fa-camera ml-2 opacity-70"></i> 
+                                شواهد من الفعالية
+                            </span>
+                             <span class="mr-2 pr-2 border-r-2 border-gray-300 font-normal text-sm opacity-90 leading-tight" style="color: var(--text-body)">${appState.data.evidence}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                 evidenceSectionHTML = renderCard('شواهد من الفعالية', '', 'fas fa-camera'); 
+            }
+
+            let p1HTML = `
+                ${getHeaderHTML()}
+                
+                <div class="page-content-layer px-10 py-5 relative z-10 overflow-hidden">
+                    
+                    <div class="text-center mb-4 shrink-0">
+                        <div class="main-title-box">
+                            <h1 class="text-2xl font-black">${appState.data.title}</h1>
+                        </div>
+                        <div class="mt-2 flex flex-wrap justify-center gap-2">
+                            ${formatDateRange()}
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 mb-4 shrink-0">
+                        ${renderMetaRow()}
+                        ${renderCard('الأهداف', appState.data.objectives, 'fas fa-bullseye')}
+                        ${renderCard('وصف البرنامج', appState.data.description, 'fas fa-align-justify')}
+                        ${evidenceSectionHTML} 
+                    </div>
+
+                    <div class="flex-1 min-h-0 flex flex-col pt-1">
+                        ${renderImagesGrid(0, appState.config.firstPageImgCount)}
+                    </div>
+
+                    <div class="flex justify-between items-end mt-auto pt-4 shrink-0 signatures-area border-t border-gray-100 bg-white/90 rounded-t-lg px-2">
+                         <div class="text-center min-w-[120px]">
+                            <p class="text-xs font-bold text-gray-500 mb-2">${appState.data.preparerTitle}</p>
+                            <p class="text-sm font-bold" style="color: var(--text-signatures)">${appState.data.preparerName || '................'}</p>
+                        </div>
+                        
+                        <div class="flex flex-col items-center justify-end px-2" id="qrCodeContainer">
+                            ${generateQRHTML()}
+                        </div>
+
+                        <div class="text-center min-w-[120px]">
+                            <p class="text-xs font-bold text-gray-500 mb-2">مدير المدرسة</p>
+                            <p class="text-sm font-bold" style="color: var(--text-signatures)">${appState.data.principalName}</p>
+                        </div>
+                    </div>
+                </div>
+                ${getFooterHTML(1)}
+            `;
+            
+            page1.innerHTML = p1HTML;
+            container.appendChild(page1);
+            
+            if(appState.data.qrLink) {
+                setTimeout(() => {
+                    const el = document.getElementById('qrcode-render');
+                    if(el) {
+                        el.innerHTML = "";
+                        new QRCode(el, {
+                            text: appState.data.qrLink,
+                            width: 64,
+                            height: 64,
+                            colorDark : appState.config.primary,
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.H
+                        });
+                    }
+                }, 100);
+            }
+
+            const remaining = appState.data.images.slice(appState.config.firstPageImgCount);
+            if(remaining.length > 0) {
+                const chunkSize = 8;
+                for(let i=0; i<remaining.length; i+=chunkSize) {
+                    const page = document.createElement('div');
+                    page.className = 'a4-page';
+                    page.style.backgroundImage = `url('${appState.config.internalSvgData}')`;
+                    
+                    let headerContent = appState.config.showAppendixHeader ? getHeaderHTML() : '<div class="h-8"></div>';
+                    page.innerHTML = `
+                        ${headerContent}
+                        <div class="page-content-layer px-8 pb-8 pt-4 overflow-hidden relative z-10 flex flex-col">
+                             <div class="w-full text-center border-b-2 border-gray-100 pb-2 mb-4 shrink-0 bg-white/90 rounded">
+                                <h2 class="text-lg font-bold text-gray-600 flex items-center justify-center gap-2">
+                                    <i class="fas fa-images text-[var(--secondary)]"></i>
+                                    ملحق شواهد: <span style="color: var(--primary)">${appState.data.title}</span>
+                                </h2>
+                             </div>
+                             <div class="flex-1 min-h-0">
+                                ${renderImagesGrid(appState.config.firstPageImgCount + i, chunkSize, true)}
+                             </div>
+                        </div>
+                        ${getFooterHTML(2 + Math.floor(i/chunkSize) + (appState.config.hasCoverPage ? 1 : 0))}
+                    `;
+                    container.appendChild(page);
+                }
+            }
+        }
+
+        function generateQRHTML() {
+            if(!appState.data.qrLink) return '';
+            return `
+                <div id="qrcode-render" class="mb-1 bg-white p-1 rounded border border-gray-200"></div>
+                <span class="text-[9px] font-bold text-gray-500 max-w-[150px] text-center leading-tight">${appState.data.qrDesc || 'امسح الرمز'}</span>
+            `;
+        }
+
+        function generateCoverHTML() {
+            const style = appState.config.coverStyle;
+            const logoR = appState.header.rightLogo ? `<img src="${appState.header.rightLogo}" class="h-24 object-contain">` : '';
+            const logoL = appState.header.leftLogo ? `<img src="${appState.header.leftLogo}" class="h-24 object-contain">` : '';
+            const coverImg = appState.data.coverImage ? 
+                `<div class="w-full h-64 mb-6 rounded-lg overflow-hidden shadow-lg border-4 border-white/50"><img src="${appState.data.coverImage}" class="w-full h-full object-cover"></div>` : '';
+
+            if (style === 'cover-artistic') {
+                return `
+                    <div class="h-full w-full flex flex-col p-12 relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-12 relative z-10">
+                            <div class="bg-white/80 p-2 rounded shadow-sm">${logoR}</div>
+                            <div class="bg-white/80 p-2 rounded shadow-sm">${logoL}</div>
+                        </div>
+                        <div class="flex-1 flex flex-col justify-center items-center text-center relative z-10 bg-white/90 p-8 rounded-2xl shadow-xl border border-gray-100 mx-4">
+                             ${coverImg}
+                             <h1 class="text-5xl font-black mb-4 mt-4" style="color: var(--report-title-c1);">${appState.data.title}</h1>
+                             <p class="text-xl text-gray-500 font-bold mb-8">${appState.header.lines[3]}</p>
+                             <div class="inline-block border-2 border-[var(--secondary)] px-8 py-2 rounded-full text-[var(--secondary)] font-bold">
+                                ${formatDateRange()}
+                             </div>
+                        </div>
+                    </div>
+                `;
+            }
+            else {
+                return `
+                    <div class="h-full w-full flex flex-col p-8 relative overflow-hidden">
+                        <div class="flex justify-between items-start relative z-10 mb-8 border-b-2 border-[var(--primary)]/10 pb-6">
+                            <div class="w-24 flex justify-center">${logoR}</div>
+                            <div class="flex-1 text-center space-y-1 px-4">
+                                ${appState.header.lines.map((l, i) => {
+                                    const baseClass = "text-sm font-bold text-gray-700"; 
+                                    if(i === 3) return `<p class="${baseClass} text-lg mt-1" style="color: var(--text-school); font-weight: 900;">${l}</p>`; 
+                                    return `<p class="${baseClass}" style="color: var(--text-header);">${l}</p>`;
+                                }).join('')}
+                            </div>
+                            <div class="w-24 flex justify-center">${logoL}</div>
+                        </div>
+                        
+                        <div class="flex-1 flex flex-col justify-center items-center relative z-10 px-8 text-center">
+                             ${coverImg}
+                             <h1 class="text-6xl font-black mb-6 leading-tight drop-shadow-sm" style="color: var(--report-title-c1);">${appState.data.title}</h1>
+                             <div class="w-24 h-1 bg-[var(--secondary)] mx-auto mb-6 rounded-full"></div>
+                             <div class="text-gray-600 font-bold text-sm bg-white/80 px-6 py-2 rounded-full shadow-sm border border-gray-100">${formatDateRange()}</div>
+                        </div>
+
+                        <div class="relative z-10 grid grid-cols-2 gap-8 border-t border-gray-200 pt-8 mt-auto bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/50">
+                            <div class="text-center">
+                                <p class="text-xs font-bold text-gray-500 mb-1">${appState.data.preparerTitle}</p>
+                                <p class="text-lg font-bold" style="color: var(--text-signatures)">${appState.data.preparerName}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs font-bold text-gray-500 mb-1">مدير المدرسة</p>
+                                <p class="text-lg font-bold" style="color: var(--text-signatures)">${appState.data.principalName}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderMetaRow() {
+            let html = '';
+            if (appState.data.targetAudience || appState.data.gradeLevel || appState.data.participantCount) {
+                 let items = [];
+                 if (appState.data.targetAudience) {
+                     items.push(renderInfoCard('المستهدفون', appState.data.targetAudience, 'fas fa-users', 'text-amber-600'));
+                 }
+                 if (appState.data.gradeLevel) {
+                     items.push(renderInfoCard('المرحلة', appState.data.gradeLevel, 'fas fa-graduation-cap', 'text-emerald-600'));
+                 }
+                 if (appState.data.participantCount) {
+                     items.push(renderInfoCard('العدد', appState.data.participantCount, 'fas fa-sort-numeric-up-alt', 'text-blue-600'));
+                 }
+
+                 if(items.length > 0) {
+                     let gridClass = 'grid-cols-1';
+                     if(items.length === 2) gridClass = 'grid-cols-2';
+                     if(items.length === 3) gridClass = 'grid-cols-3';
+
+                     html += `<div class="grid ${gridClass} gap-3">`;
+                     html += items.join('');
+                     html += '</div>';
+                 }
+            }
+            return html;
+        }
+        
+        function renderInfoCard(title, text, icon, colorClass) {
+             return `
+                <div class="card-box flex flex-row items-center gap-3 !py-2"> 
+                    <div class="card-title !mb-0 whitespace-nowrap shrink-0" style="color: inherit"> 
+                        <span class="${colorClass} flex items-center gap-2"><i class="${icon} opacity-80"></i> ${title}:</span>
+                    </div>
+                    <div class="text-sm font-bold leading-tight card-body-text mt-0.5">${text}</div>
+                </div>
+            `;
+        }
+
+        function renderCard(title, text, icon) {
+            if(!text) return '';
+            return `
+                <div class="card-box">
+                    <div class="card-title"><i class="${icon} ml-1 opacity-70"></i> ${title}</div>
+                    <div class="text-sm font-bold leading-relaxed whitespace-pre-line card-body-text">${text}</div>
+                </div>
+            `;
+        }
+
+        function renderImagesGrid(startIndex, count, isExtraPage = false) {
+            let imgs = isExtraPage ? 
+                appState.data.images.slice(startIndex, startIndex + count) : 
+                appState.data.images.slice(0, count);
+
+            if(imgs.length === 0 && !isExtraPage) return `<div class="h-full border-2 border-dashed border-gray-300 rounded bg-gray-50 flex items-center justify-center text-gray-400 text-xs">مساحة الصور (${count})</div>`;
+            
+            let gridClass = 'grid-4';
+            if(count === 6) gridClass = 'grid-6';
+            if(count === 2) gridClass = 'grid-2';
+            if(count === 8) gridClass = 'grid-8';
+
+            let html = `<div class="img-grid ${gridClass}" style="${count === 2 ? 'height:100%' : ''}">`;
+            html += imgs.map(src => `<div class="img-box shadow-sm"><img src="${src}"></div>`).join('');
+            if(imgs.length < count) {
+                 for(let k=0; k < count - imgs.length; k++) {
+                     html += `<div class="img-box bg-white border-dashed flex items-center justify-center opacity-50"><i class="fas fa-image text-gray-200"></i></div>`;
+                 }
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        function getHeaderHTML() {
+            return `
+                <div class="w-full shrink-0 page-header">
+                    <div class="px-8 py-3 flex justify-between items-center">
+                         <div class="w-20 h-20 flex items-center justify-center bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
+                            ${appState.header.rightLogo ? `<img src="${appState.header.rightLogo}" class="max-h-full max-w-full object-contain">` : '<span class="text-[10px] text-gray-300">يمين</span>'}
+                        </div>
+                        <div class="text-center space-y-1 header-text-color header-lines">
+                            ${appState.header.lines.map((l, i) => {
+                                const baseClass = "text-sm font-bold"; 
+                                if(i === 3) return `<p class="${baseClass} text-lg mt-1" style="color: var(--text-school); font-weight: 900;">${l}</p>`; 
+                                return `<p class="${baseClass}" style="color: var(--text-header);">${l}</p>`;
+                            }).join('')}
+                        </div>
+                        <div class="w-20 h-20 flex items-center justify-center bg-white rounded shadow-sm border border-gray-100 overflow-hidden">
+                            ${appState.header.leftLogo ? `<img src="${appState.header.leftLogo}" class="max-h-full max-w-full object-contain">` : '<span class="text-[10px] text-gray-300">يسار</span>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getFooterHTML(n) {
+            return `
+            <div class="footer w-full px-6 flex justify-between shrink-0 font-bold text-[11px]" style="height: 40px; padding-top: 5px; padding-bottom: 10px;">
+                <span style="transform: translateY(-2px); display: inline-block;">${appState.data.title}</span>
+                <span style="transform: translateY(-2px); display: inline-block;">صفحة ${n}</span>
+            </div>
+            `;
+        }
+
+        function formatDateRange() {
+            if(!appState.data.startDate) return '';
+            const opts = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
+            const d1 = new Date(appState.data.startDate).toLocaleDateString('ar-SA', opts);
+            const d2 = appState.data.endDate ? new Date(appState.data.endDate).toLocaleDateString('ar-SA', opts) : '';
+            return `<span class="inline-block bg-white border border-gray-200 shadow-sm rounded-lg px-4 py-1 text-sm font-extrabold text-gray-700"><i class="far fa-calendar-alt ml-1 text-indigo-500"></i> ${d1} ${d2 && d1!==d2 ? ' - ' + d2 : ''}</span>`;
+        }
+
+        function setTheme(themeName) {
+            appState.config.theme = themeName;
+            const isLocked = document.getElementById('lockThemeColors')?.checked;
+            if (!isLocked && themeColors[themeName]) {
+                appState.config.primary = themeColors[themeName].primary;
+                appState.config.secondary = themeColors[themeName].secondary;
+                appState.config.headerTextColor = themeColors[themeName].headerTxt || '#374151';
+                appState.config.schoolNameColor = themeColors[themeName].schoolTxt || themeColors[themeName].primary; 
+                appState.config.reportTitleColor1 = themeColors[themeName].title1 || themeColors[themeName].primary; 
+                appState.config.reportTitleColor2 = themeColors[themeName].title2 || themeColors[themeName].primary; 
+                appState.config.cardTitleColor = themeColors[themeName].card || themeColors[themeName].primary;
+                appState.config.bodyTextColor = themeColors[themeName].body || '#1f2937';
+                appState.config.signatureColor = themeColors[themeName].sig || themeColors[themeName].primary;
+            }
+            render();
+            syncUI();
+            updateCoverSvg();
+            render();
+
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+                if(btn.dataset.t === themeName) btn.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+            });
+        }
+
+        function updateColors() {
+            appState.config.primary = document.getElementById('primaryColor').value;
+            appState.config.secondary = document.getElementById('secondaryColor').value;
+            appState.config.headerTextColor = document.getElementById('headerTextColor').value;
+            appState.config.schoolNameColor = document.getElementById('schoolNameColor').value;
+            appState.config.reportTitleColor1 = document.getElementById('reportTitleColor1').value; 
+            appState.config.reportTitleColor2 = document.getElementById('reportTitleColor2').value; 
+            appState.config.cardTitleColor = document.getElementById('cardTitleColor').value;
+            appState.config.bodyTextColor = document.getElementById('bodyTextColor').value;
+            appState.config.signatureColor = document.getElementById('signatureColor').value;
+            
+            document.documentElement.style.setProperty('--primary', appState.config.primary);
+            document.documentElement.style.setProperty('--secondary', appState.config.secondary);
+            document.documentElement.style.setProperty('--text-header', appState.config.headerTextColor);
+            document.documentElement.style.setProperty('--text-school', appState.config.schoolNameColor);
+            document.documentElement.style.setProperty('--report-title-c1', appState.config.reportTitleColor1); 
+            document.documentElement.style.setProperty('--report-title-c2', appState.config.reportTitleColor2); 
+            document.documentElement.style.setProperty('--text-title', appState.config.cardTitleColor);
+            document.documentElement.style.setProperty('--text-body', appState.config.bodyTextColor);
+            document.documentElement.style.setProperty('--text-signatures', appState.config.signatureColor);
+            
+            updateCoverSvg(); 
+            render();
+        }
+
+        function updateSettings() {
+            appState.config.font = document.getElementById('fontFamily').value;
+            appState.config.hasCoverPage = document.getElementById('hasCoverPage').checked;
+            appState.config.coverStyle = document.getElementById('coverStyle').value;
+            appState.config.showAppendixHeader = document.getElementById('showAppendixHeader').checked;
+            appState.config.lockColors = document.getElementById('lockThemeColors').checked;
+            updateColors();
+            document.getElementById('coverSettings').classList.toggle('hidden', !appState.config.hasCoverPage);
+            saveToStorage(); render();
+        }
+
+        function handleImageUpload(input) {
+            const files = Array.from(input.files);
+            if(!files.length) return;
+            let count = 0;
+            document.getElementById('imgCountLabel').innerText = 'جاري الرفع...';
+            files.forEach(f => {
+                const r = new FileReader();
+                r.onload = e => {
+                    appState.data.images.push(e.target.result);
+                    count++;
+                    if(count === files.length) {
+                        document.getElementById('imgCountLabel').innerText = `${appState.data.images.length} صور`;
+                        render();
+                    }
+                };
+                r.readAsDataURL(f);
+            });
+        }
+
+        function clearImages() {
+            appState.data.images = [];
+            document.getElementById('imgCountLabel').innerText = '0 صور';
+            render();
+        }
+
+        function handleCoverImage(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const r = new FileReader();
+            r.onload = e => {
+                appState.data.coverImage = e.target.result;
+                render();
+            };
+            r.readAsDataURL(file);
+        }
+
+        function clearCoverImage() {
+            appState.data.coverImage = null;
+            render();
+        }
+
+        function updateHeaderData() {
+            appState.header.lines = [
+                document.getElementById('hLine1').value, document.getElementById('hLine2').value,
+                document.getElementById('hLine3').value, document.getElementById('hLine4').value
+            ];
+            saveToStorage(); render();
+        }
+        function handleLogoUpload(input, side) {
+            const f = input.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = e => {
+                if(side === 'right') appState.header.rightLogo = e.target.result;
+                else appState.header.leftLogo = e.target.result;
+                saveToStorage(); render();
+            };
+            r.readAsDataURL(f);
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('rep_v19_conf', JSON.stringify(appState.config));
+            localStorage.setItem('rep_v19_head', JSON.stringify(appState.header));
+        }
+        function loadFromStorage() {
+            const c = localStorage.getItem('rep_v19_conf');
+            const h = localStorage.getItem('rep_v19_head');
+            if(c) appState.config = {...appState.config, ...JSON.parse(c)};
+            if(h) appState.header = {...appState.header, ...JSON.parse(h)};
+        }
+        function syncUI() {
+            document.getElementById('primaryColor').value = appState.config.primary;
+            document.getElementById('secondaryColor').value = appState.config.secondary;
+            document.getElementById('headerTextColor').value = appState.config.headerTextColor || '#374151';
+            document.getElementById('schoolNameColor').value = appState.config.schoolNameColor || '#1e3a8a';
+            document.getElementById('reportTitleColor1').value = appState.config.reportTitleColor1 || '#1e3a8a'; 
+            document.getElementById('reportTitleColor2').value = appState.config.reportTitleColor2 || '#3b82f6'; 
+            document.getElementById('cardTitleColor').value = appState.config.cardTitleColor || '#1e3a8a';
+            document.getElementById('bodyTextColor').value = appState.config.bodyTextColor || '#1f2937';
+            document.getElementById('signatureColor').value = appState.config.signatureColor || '#1e3a8a';
+
+            document.getElementById('fontFamily').value = appState.config.font;
+            document.getElementById('hLine1').value = appState.header.lines[0];
+            document.getElementById('hLine2').value = appState.header.lines[1];
+            document.getElementById('hLine3').value = appState.header.lines[2];
+            document.getElementById('hLine4').value = appState.header.lines[3];
+            
+            document.getElementById('hasCoverPage').checked = appState.config.hasCoverPage;
+            document.getElementById('coverStyle').value = appState.config.coverStyle;
+            document.getElementById('showAppendixHeader').checked = appState.config.showAppendixHeader;
+            document.getElementById('lockThemeColors').checked = appState.config.lockColors || false;
+            
+            document.getElementById('coverSettings').classList.toggle('hidden', !appState.config.hasCoverPage);
+            updateColors();
+            
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+                if(btn.dataset.t === appState.config.theme) btn.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+            });
+        }
+
+        let scale = 1;
+        function adjustZoom(d) {
+            scale = Math.min(Math.max(scale + d, 0.4), 1.5);
+            document.getElementById('report-content').style.transform = `scale(${scale})`;
+            document.getElementById('zoomLevel').innerText = Math.round(scale*100) + '%';
+        }
+
+        // =================================================================
+        // ================= دوال التحكم الجديدة (المدمجة) =================
+        // =================================================================
+
+        function toggleSubFolderInput() {
+            const val = document.getElementById('finalDestination').value;
+            const area = document.getElementById('subFolderArea');
+            // إظهار الحقل فقط إذا كان الاختيار نافس أو تدريس أو غيرها مما يحتاج تفصيل
+            if(val === 'nafs' || val === 'teaching') {
+                area.classList.remove('hidden');
+            } else {
+                area.classList.add('hidden');
+                document.getElementById('subFolderName').value = ''; 
+            }
+        }
+
+        // دالة التنفيذ المعدلة (تفتح نافذة الحفظ إجبارياً)
+        async function executeAction() {
+            const destination = document.getElementById('finalDestination').value;
+            const btn = document.getElementById('actionBtn');
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const statusEl = document.getElementById('actionStatus');
+            const element = document.getElementById('report-content');
+            
+            // إعدادات الـ PDF
+            const opt = {
+                margin: 0,
+                filename: `تقرير_${appState.data.title}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: false, scrollY: 0 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // تجهيز الصفحة (إزالة الهوامش مؤقتاً للتصوير)
+            const pages = element.querySelectorAll('.a4-page');
+            const originalMargins = [];
+            pages.forEach(p => { originalMargins.push(p.style.margin); p.style.margin = '0'; });
+            const originalTransform = element.style.transform;
+            element.style.transform = 'scale(1)';
+
+            // === السيناريو 1: الحفظ المحلي (إجبار نافذة Save As) ===
+            if (destination === 'local_pc') {
+                btnText.innerText = 'جاري تحضير الملف...';
+                btnIcon.className = 'fas fa-spinner fa-spin';
+                
+                try {
+                    // 1. إنشاء ملف PDF في الذاكرة أولاً
+                    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+
+                    // 2. استعادة تنسيق الصفحة فوراً
+                    element.style.transform = originalTransform;
+                    pages.forEach((p, i) => { p.style.margin = originalMargins[i] || '0 auto 20px auto'; });
+
+                    // 3. محاولة استخدام نافذة الحفظ الحديثة (تعمل على Edge و Chrome)
+                    if (window.showSaveFilePicker) {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: opt.filename,
+                            types: [{
+                                description: 'PDF Document',
+                                accept: { 'application/pdf': ['.pdf'] },
+                            }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(pdfBlob);
+                        await writable.close();
+                        
+                        statusEl.innerHTML = '<span class="text-green-600">✅ تم الحفظ في المكان المحدد</span>';
+                    } else {
+                        // 4. خطة بديلة للمتصفحات القديمة جداً
+                        const url = URL.createObjectURL(pdfBlob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = opt.filename;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        statusEl.innerHTML = '<span class="text-green-600">✅ تم التنزيل (راجع مجلد التنزيلات)</span>';
+                    }
+                    
+                    btnText.innerText = 'تنفيذ الإجراء';
+                    btnIcon.className = 'fas fa-paper-plane';
+
+                } catch (err) {
+                    // في حال ألغى المستخدم عملية الحفظ
+                    console.log(err);
+                    element.style.transform = originalTransform;
+                    pages.forEach((p, i) => { p.style.margin = originalMargins[i] || '0 auto 20px auto'; });
+                    btnText.innerText = 'تنفيذ الإجراء';
+                    btnIcon.className = 'fas fa-paper-plane';
+                    if (err.name !== 'AbortError') {
+                        statusEl.innerHTML = '<span class="text-red-600">❌ حدث خطأ أثناء الحفظ</span>';
+                    }
+                }
+                return; 
+            }
+
+            // === السيناريو 2: الرفع للدرايف (باستخدام رابطك الجديد) ===
+            const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyahJle4Bhe41Txha30KMJccu8oXJJCj2UkVgW-cn4toPQKFlIYVhLvtR8OLnqSy5Ix/exec";
+
+            btn.disabled = true;
+            btnText.innerText = 'جاري الرفع والأرشفة...';
+            btnIcon.className = 'fas fa-cloud-upload-alt fa-fade';
+            statusEl.innerHTML = '';
+
+            html2pdf().set(opt).from(element).output('datauristring').then(function(pdfBase64) {
+                // استعادة التنسيق فوراً
+                element.style.transform = originalTransform;
+                pages.forEach((p, i) => { p.style.margin = originalMargins[i] || '0 auto 20px auto'; });
+
+                const rawData = pdfBase64.split(',')[1];
+                const subFolderVal = document.getElementById('subFolderName').value;
+
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: destination,
+                        subFolderName: subFolderVal,
+                        fileName: opt.filename,
+                        fileData: rawData
+                    })
+                })
+                .then(res => res.json())
+                .then(response => {
+                    btn.disabled = false;
+                    btnText.innerText = 'تنفيذ الإجراء';
+                    btnIcon.className = 'fas fa-paper-plane';
+                    
+                    if(response.status === 'success') {
+                        let folderInfo = response.folderName ? ` في مجلد (${response.folderName})` : '';
+                        statusEl.innerHTML = `✅ تم الحفظ${folderInfo}! <a href="${response.fileUrl}" target="_blank" class="underline text-blue-600">عرض الملف</a>`;
+                        
+                        if(confirm("تمت الأرشفة بنجاح! ☁️\nهل تريد إرسال الرابط عبر واتساب؟")) {
+                            const waUrl = `https://wa.me/?text=${encodeURIComponent(`تقرير: ${appState.data.title}\nللإطلاع: ${response.fileUrl}`)}`;
+                            window.open(waUrl, '_blank');
+                        }
+                    } else {
+                        statusEl.innerHTML = `<span class="text-red-600">❌ خطأ: ${response.message}</span>`;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    btn.disabled = false;
+                    btnText.innerText = 'حاول مرة أخرى';
+                    btnIcon.className = 'fas fa-exclamation-triangle';
+                    statusEl.innerHTML = '<span class="text-red-600">فشل الاتصال بالخادم</span>';
+                });
+            });
+        }
+    </script>
+</body>
+</html>

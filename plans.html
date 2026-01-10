@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الخطط V13.4 - النظام الهجين (اختبار + دروس)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ministry: { primary: '#0E7557', secondary: '#194f43', gold: '#C5A47E' },
+                    },
+                    fontFamily: { sans: ['Tajawal', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .print-area { display: none; }
+
+        @media print {
+            @page { size: landscape; margin: 0; } 
+            body, #root, .min-h-screen { background-color: white !important; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            .print-area { display: block !important; width: 100%; background-color: white; }
+            
+            .print-cover-page { 
+                width: 297mm; height: 209mm; position: relative; overflow: hidden; 
+                background: white !important; page-break-after: always; break-after: page;
+                margin: 0 auto; z-index: 10;
+            }
+            .cover-header { position: absolute; top: 15mm; left: 0; right: 0; width: 100%; }
+            .cover-body   { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); width: 100%; }
+            .cover-footer { position: absolute; bottom: 10mm; left: 0; right: 0; width: 100%; }
+
+            .print-content-page { width: 100%; display: block; background-color: white !important; padding-top: 10mm; page-break-before: always; min-height: 100vh; }
+            .header-container { width: 94%; margin: 0 auto 5px auto; border-bottom: 2px solid #0E7557; padding-bottom: 5px; }
+
+            table.theme-table { width: 98% !important; margin: 0 auto !important; border-collapse: collapse; font-size: 10px; direction: rtl; background-color: white; } 
+            thead { display: table-header-group; } 
+            tfoot { display: table-footer-group; } 
+            .spacer-row td, .footer-spacer-row td { display: table-cell !important; height: 10mm !important; border: none !important; background: white !important; }
+
+            tr { page-break-inside: auto; } 
+            td, th { page-break-inside: auto; }
+            table.theme-table th { padding: 5px; border: 1px solid #000; font-weight: 800; background-color: #f3f4f6; color: black; -webkit-print-color-adjust: exact; }
+            table.theme-table td { border: 1px solid #ccc; padding: 4px; vertical-align: top; line-height: 1.4; } 
+            
+            .theme-classic th { background-color: #0E7557 !important; color: white !important; }
+            .theme-ocean th { background-color: #1e40af !important; color: white !important; }
+            .theme-elegant th { background-color: #1f2937 !important; color: white !important; }
+            
+            .week-cell { vertical-align: middle !important; text-align: center; border-bottom: 1px solid #999 !important; width: 5%; font-weight: bold; background-color: white !important; }
+            
+            .print-extra-page { 
+                width: 94%; margin: 0 auto; padding-top: 10mm; 
+                page-break-before: always; 
+                break-before: page;
+                box-sizing: border-box; 
+                background-color: white !important; 
+                min-height: 209mm; 
+                position: relative; 
+                z-index: 10; 
+                display: flex; flex-direction: column; 
+            }
+        }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+    const QrCode = ({ value, size = 55, label = true }) => {
+        const canvasRef = useRef(null);
+        useEffect(() => { if (value && canvasRef.current) try { new QRious({ element: canvasRef.current, value: value, size: size }); } catch(e){} }, [value, size]);
+        return value ? <div className="flex flex-col items-center"><canvas ref={canvasRef} />{label && <span className="text-[8px] font-bold mt-1">إثراء</span>}</div> : <span>-</span>;
+    };
+
+    const ImageUploader = ({ label, image, onUpload }) => {
+        const fileRef = useRef(null);
+        return (
+            <div className="flex flex-col items-center justify-center w-16 h-16 border-2 border-dashed border-gray-300 rounded hover:bg-gray-50 cursor-pointer bg-white transition-colors relative" onClick={() => fileRef.current.click()}>
+                <input type="file" ref={fileRef} className="hidden" accept="image/png, image/jpeg" onChange={(e) => {
+                    const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onloadend = () => onUpload(r.result); r.readAsDataURL(f); }
+                }} />
+                {image ? <img src={image} className="h-full w-full object-contain p-1" /> : <div className="text-gray-400 text-[8px] font-bold text-center leading-tight">رفع {label}<br/><span className="text-[6px] text-red-400">(png شفاف)</span></div>}
+            </div>
+        );
+    };
+
+    // --- دالة الحساب الدقيقة لعدد الأسطر/المؤشرات ---
+    const countItemIndicators = (item) => {
+        if (!item) return 0;
+        const text1 = item.indicators || '';
+        const text2 = item.outcome || '';
+        const targetText = (text1.trim().length > 0) ? text1 : text2;
+        return targetText.toString().split('\n').filter(l => l.trim().length > 0).length || 1; 
+    };
+
+    const StatsDisplay = ({ dataBank }) => {
+        const stats = useMemo(() => {
+            if(!dataBank || !Array.isArray(dataBank)) return { domains:0, outcomes:0, indicatorsCount:0 };
+            const domains = new Set(dataBank.map(i => i?.general || '')).size;
+            const outcomes = dataBank.length;
+            const indicatorsCount = dataBank.reduce((acc, curr) => acc + countItemIndicators(curr), 0);
+            return { domains, outcomes, indicatorsCount };
+        }, [dataBank]);
+
+        return (
+            <div className="grid grid-cols-3 gap-2 mb-4 bg-gradient-to-r from-gray-50 to-gray-100 p-2 rounded-lg border border-gray-200">
+                <div className="text-center border-l border-gray-300">
+                    <span className="block text-[10px] text-gray-500 font-bold">المجالات</span>
+                    <span className="block text-lg font-black text-ministry-primary">{stats.domains}</span>
+                </div>
+                <div className="text-center border-l border-gray-300">
+                    <span className="block text-[10px] text-gray-500 font-bold">العناصر (الصفوف)</span>
+                    <span className="block text-lg font-black text-ministry-primary">{stats.outcomes}</span>
+                </div>
+                <div className="text-center">
+                    <span className="block text-[10px] text-gray-500 font-bold">إجمالي النقاط/المؤشرات</span>
+                    <span className="block text-lg font-black text-ministry-primary">{stats.indicatorsCount}</span>
+                </div>
+            </div>
+        );
+    };
+
+    const CoverPage = ({ data, logos }) => {
+        const safeData = data || {};
+        return (
+            <div className="print-cover-page">
+                <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                    <svg className="absolute top-0 left-0 w-[500px] h-[500px] -translate-x-1/4 -translate-y-1/3 opacity-90" viewBox="0 0 200 200"><path d="M0,0 L200,0 A200,200 0 0,1 0,200 Z" fill="#0E7557" /></svg>
+                    <svg className="absolute bottom-0 right-0 w-[400px] h-[400px] translate-x-1/3 translate-y-1/3 opacity-15" viewBox="0 0 200 200"><circle cx="100" cy="100" r="100" fill="#0E7557" /></svg>
+                    <div className="absolute top-20 right-10 flex gap-2 flex-wrap w-24 opacity-10">{[...Array(15)].map((_,i)=><div key={i} className="w-1.5 h-1.5 rounded-full bg-ministry-primary"></div>)}</div>
+                </div>
+                <div className="cover-header px-12">
+                    <div className="grid grid-cols-3 w-full items-start">
+                        <div className="flex flex-col items-center text-center space-y-1">
+                             <h2 className="text-lg font-bold text-gray-800">المملكة العربية السعودية</h2>
+                             <h2 className="text-lg font-bold text-gray-800">وزارة التعليم</h2>
+                             <h2 className="text-lg font-bold text-gray-800">{safeData.admin}</h2>
+                             <h2 className="text-lg font-bold text-gray-800">{safeData.school}</h2>
+                        </div>
+                        <div className="flex justify-center"> {logos.ministry && <img src={logos.ministry} className="h-32 w-auto object-contain drop-shadow-sm" />} </div>
+                        <div></div>
+                    </div>
+                </div>
+                <div className="cover-body flex justify-center items-center">
+                        <div className="bg-white/95 backdrop-blur-md px-12 py-8 rounded-[2.5rem] shadow-2xl border border-gray-50 max-w-4xl w-full relative overflow-hidden text-center transform scale-95">
+                                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-ministry-primary via-ministry-gold to-ministry-primary"></div>
+                                <h1 className="text-5xl font-black text-ministry-primary mb-6 leading-tight drop-shadow-sm">{safeData.title}</h1>
+                                <div className="flex items-center justify-center gap-4 mb-6">
+                                    <div className="h-[2px] w-16 bg-gray-200 rounded-full"></div>
+                                    <div className="w-4 h-4 rounded-full bg-ministry-gold shadow-sm"></div>
+                                    <div className="h-[2px] w-16 bg-gray-200 rounded-full"></div>
+                                </div>
+                                <div className="flex justify-center items-center gap-8 mb-4 bg-gray-50 p-4 rounded-2xl border border-gray-100 shadow-inner">
+                                    <div className="text-right border-l-2 border-gray-300 pl-8 min-w-[150px]">
+                                        <span className="block text-sm text-gray-400 font-bold mb-1">المقرر الدراسي</span>
+                                        <span className="block text-3xl font-black text-gray-800">{safeData.subject}</span>
+                                    </div>
+                                    <div className="text-right min-w-[150px]">
+                                        <span className="block text-sm text-gray-400 font-bold mb-1">الصف الدراسي</span>
+                                        <span className="block text-3xl font-black text-gray-800">{safeData.grade}</span>
+                                    </div>
+                                </div>
+                                <p className="text-2xl font-bold text-ministry-gold mt-1 font-mono inline-block px-8 py-1 border-t border-gray-100">{safeData.year}</p>
+                        </div>
+                </div>
+                <div className="cover-footer px-12">
+                     <div className="grid grid-cols-3 gap-8 w-full border-t border-gray-200 pt-4 bg-white/50 backdrop-blur-sm rounded-t-xl">
+                            <div className="text-center group"><p className="text-gray-500 text-xs font-bold mb-1 group-hover:text-ministry-primary transition-colors">معد الخطة</p><p className="font-black text-lg text-gray-800 pb-1">{safeData.teacher}</p></div>
+                            <div className="text-center group"><p className="text-gray-500 text-xs font-bold mb-1 group-hover:text-ministry-primary transition-colors">مشرف الدعم</p><p className="font-black text-lg text-gray-800 pb-1">{safeData.supervisor}</p></div>
+                            <div className="text-center group"><p className="text-gray-500 text-xs font-bold mb-1 group-hover:text-ministry-primary transition-colors">مدير المدرسة</p><p className="font-black text-lg text-gray-800 pb-1">{safeData.principal}</p></div>
+                     </div>
+                </div>
+            </div>
+        );
+    };
+
+    const RecommendationsPage = ({ data, logos, recommendations }) => {
+        if (!recommendations) return null;
+        return (
+            <div className="print-extra-page">
+                 <div className="border-b-2 pb-2 mb-6" style={{borderColor: '#0E7557'}}>
+                    <div className="flex justify-between items-center h-16 px-2">
+                        <div className="w-1/4 flex justify-start"> {logos.ministry && <img src={logos.ministry} className="h-16 w-auto object-contain" />} </div>
+                        <div className="w-2/4 text-center">
+                            <h1 className="text-2xl font-black text-ministry-primary">التوصيات والملاحظات الختامية</h1>
+                            <p className="text-xs text-gray-500 font-bold mt-1">{data.subject} - {data.grade}</p>
+                        </div>
+                        <div className="w-1/4 flex justify-end items-center gap-4"> {logos.vision && <img src={logos.vision} className="h-14 w-auto object-contain" />} </div>
+                    </div>
+                 </div>
+
+                 <div className="w-full flex-1 p-8 bg-white">
+                    <div className="p-6 border-r-8 border-red-600 bg-gray-50 rounded-xl shadow-sm">
+                        <h3 className="text-red-700 font-black text-xl mb-6 flex items-center gap-2 border-b pb-2">
+                            <span>📋</span> التوصيات الفنية والإدارية:
+                        </h3>
+                        <p className="text-gray-800 text-base whitespace-pre-wrap leading-loose font-medium pr-2 text-justify">{recommendations}</p>
+                    </div>
+                 </div>
+            </div>
+        )
+    };
+
+    const EnrichmentsPage = ({ data, logos, enrichments }) => {
+        return (
+            <div className="print-extra-page flex flex-col h-[209mm]">
+                 <div className="border-b-2 pb-2 mb-6" style={{borderColor: '#0E7557'}}>
+                    <div className="flex justify-between items-center h-16 px-2">
+                        <div className="w-1/4 flex justify-start"> {logos.ministry && <img src={logos.ministry} className="h-16 w-auto object-contain" />} </div>
+                        <div className="w-2/4 text-center">
+                            <h1 className="text-2xl font-black text-ministry-primary">الخاتمة والمصادر</h1>
+                            <p className="text-xs text-gray-500 font-bold mt-1">{data.subject} - {data.grade}</p>
+                        </div>
+                        <div className="w-1/4 flex justify-end items-center gap-4"> {logos.vision && <img src={logos.vision} className="h-14 w-auto object-contain" />} </div>
+                    </div>
+                 </div>
+
+                 <div className="flex-1 p-4 flex flex-col">
+                    {enrichments && enrichments.length > 0 ? (
+                        <>
+                            <div className="flex items-center gap-4 mb-6 justify-center opacity-80">
+                                <div className="h-[1px] w-20 bg-ministry-primary"></div>
+                                <h2 className="text-center text-ministry-primary font-black text-xl">المصادر والإثراءات الرقمية</h2>
+                                <div className="h-[1px] w-20 bg-ministry-primary"></div>
+                            </div>
+                            <div className="grid grid-cols-4 gap-6 content-start">
+                                {enrichments.map(item => (
+                                    <div key={item.id} className="border-2 border-gray-100 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm break-inside-avoid bg-white relative overflow-hidden group hover:shadow-md transition-shadow">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-300"></div>
+                                        <h3 className="font-bold text-base text-gray-800 mb-3 min-h-[3rem] flex items-center justify-center leading-tight">{item.title}</h3>
+                                        <div className="bg-white p-2 border rounded-xl mb-4 shadow-inner"><QrCode value={item.url} size={110} label={false} /></div>
+                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="bg-blue-600 text-white px-6 py-2 rounded-full text-xs font-bold no-underline w-full flex items-center justify-center gap-2 mb-1 print:bg-blue-600 print:text-white"><span>🔗</span> اضغط للفتح</a>
+                                        <div className="text-[8px] text-gray-400 mt-1 w-full truncate font-mono opacity-60">{item.url}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center text-gray-300 font-bold text-xl border-2 border-dashed border-gray-100 rounded-xl m-8">
+                            مساحة مخصصة للإثراءات (فارغة)
+                        </div>
+                    )}
+                 </div>
+
+                 {/* التذييل مع التوقيعات */}
+                 <div className="mt-auto">
+                    <div className="grid grid-cols-3 gap-8 w-full border-t border-gray-400 pt-4 px-12 pb-8">
+                        <div className="text-center"><p className="text-[10px] font-bold text-gray-500 mb-1">معد الخطة</p><p className="font-bold text-sm">{data.teacher}</p></div>
+                        <div className="text-center"><p className="text-[10px] font-bold text-gray-500 mb-1">مشرف الدعم</p><p className="font-bold text-sm">{data.supervisor}</p></div>
+                        <div className="text-center"><p className="text-[10px] font-bold text-gray-500 mb-1">مدير المدرسة</p><p className="font-bold text-sm">{data.principal}</p></div>
+                    </div>
+                    <div className="text-center border-t border-gray-200 pt-4 pb-4">
+                        <p className="text-[10px] text-gray-400">تم إعداد هذه الخطة عبر منصة الخطط الذكية V13.4 (نظام التوزيع الهجين - اختبار ودروس)</p>
+                    </div>
+                 </div>
+            </div>
+        )
+    };
+
+    const App = () => {
+        const PRESETS = {
+            FULL_YEAR_1447: '2025-08-24', 
+        };
+
+        const defaultSubject = {
+            id: Date.now(),
+            name: "مادة جديدة",
+            info: { school: "متوسطة الراشدون بالمربع", admin: "الإدارة العامة للتعليم بمنطقة عسير", subject: "الرياضيات", grade: "3م", term: "الفصل الأول", teacher: "لجنة التميز", principal: "أحمد سالم الشهري", supervisor: "م.د. محمد المفصمي" },
+            dataBank: [],
+            enrichments: [],
+            config: { weeksCount: 44, startDate: PRESETS.FULL_YEAR_1447, globalLimit: '' },
+            manualDates: {}, 
+            manualCounts: {}, 
+            excludedWeeks: [], 
+            testWeeks: [], 
+            printMode: 'weekly',
+            template: 'standard', 
+            notes: '', 
+            recommendations: '', 
+            coverSettings: { show: true, title: "خطة تحسين نواتج التعلم", year: "1447 - 1448 هـ" }
+        };
+
+        const [logos, setLogos] = useState({ ministry: null, vision: null, nafs: null });
+        const [theme, setTheme] = useState('classic');
+        const [subjects, setSubjects] = useState([defaultSubject]);
+        const [activeSubjectId, setActiveSubjectId] = useState(defaultSubject.id);
+        const [showSidebar, setShowSidebar] = useState(false);
+        const [lastSaved, setLastSaved] = useState(null);
+        const [editId, setEditId] = useState(null);
+        const fileInputRef = useRef(null);
+
+        useEffect(() => {
+            // تحديث رقم الإصدار المحفوظ
+            const storageKey = 'improvementPlan_v13_fixed23'; 
+            const saved = localStorage.getItem(storageKey); 
+            
+            if (saved) {
+                try {
+                    const p = JSON.parse(saved);
+                    if (p.logos) setLogos(p.logos);
+                    if (p.theme) setTheme(p.theme);
+                    if (p.subjects && p.subjects.length > 0) { 
+                        const updatedSubjects = p.subjects.map(s => ({
+                            ...defaultSubject, 
+                            ...s, 
+                            id: s.id || Date.now(),
+                            enrichments: s.enrichments || [],
+                            excludedWeeks: s.excludedWeeks || [],
+                            testWeeks: s.testWeeks || [],
+                            template: s.template || 'standard',
+                            notes: s.notes || '',
+                            recommendations: s.recommendations || '',
+                            manualCounts: s.manualCounts || {},
+                            config: { ...defaultSubject.config, ...s.config }
+                        }));
+                        setSubjects(updatedSubjects); 
+                        setActiveSubjectId(updatedSubjects[0].id);
+                    }
+                } catch(e) { console.error("Error loading", e); }
+            }
+        }, []);
+
+        useEffect(() => { 
+             const storageKey = 'improvementPlan_v13_fixed23'; 
+             if (subjects.length > 0) localStorage.setItem(storageKey, JSON.stringify({ logos, theme, subjects })); 
+        }, [logos, theme, subjects]);
+
+        const activeSubject = useMemo(() => subjects.find(s => s.id === activeSubjectId) || subjects[0] || defaultSubject, [subjects, activeSubjectId]);
+        
+        const updateActiveSubject = (newData) => setSubjects(subjects.map(s => s.id === activeSubjectId ? { ...s, ...newData } : s));
+        const addNewSubject = () => { const newName = prompt("اسم المادة:"); if(newName){ const newSub = { ...defaultSubject, id: Date.now(), name: newName, info: { ...activeSubject.info, subject: newName } }; setSubjects([...subjects, newSub]); setActiveSubjectId(newSub.id); setShowSidebar(false); }};
+        const duplicateSubject = (subId) => { 
+            const subToClone = subjects.find(s => s.id === subId);
+            if(subToClone) {
+                const newSub = { ...subToClone, id: Date.now(), name: subToClone.name + " (نسخة)" };
+                setSubjects([...subjects, newSub]);
+                setActiveSubjectId(newSub.id);
+            }
+        };
+        const deleteSubject = (id) => { if (subjects.length <= 1) return; if (confirm("حذف؟")) { const newSubs = subjects.filter(s => s.id !== id); setSubjects(newSubs); setActiveSubjectId(newSubs[0].id); }};
+        const renameSubject = (id, currentName) => { const newName = prompt("تعديل اسم المادة:", currentName); if (newName && newName !== currentName) { setSubjects(subjects.map(s => s.id === id ? { ...s, name: newName } : s)); }};
+
+        const exportData = useCallback(() => {
+            const dataStr = JSON.stringify({ logos, theme, subjects });
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = `خطط_شاملة_${new Date().toISOString().slice(0,10)}.json`;
+            const linkElement = document.createElement('a'); linkElement.setAttribute('href', dataUri); linkElement.setAttribute('download', exportFileDefaultName); linkElement.click();
+            setLastSaved(new Date());
+        }, [logos, theme, subjects]);
+
+        useEffect(() => { const handleKeyDown = (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); exportData(); } }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [exportData]);
+
+        const importData = (event) => {
+            const fileObj = event.target.files[0];
+            if (!fileObj) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const p = JSON.parse(e.target.result);
+                    if (confirm("سيتم استبدال البيانات الحالية بالنسخة المحملة. هل أنت متأكد؟")) {
+                        setLogos(p.logos || {}); setTheme(p.theme || 'classic');
+                        const loadedSubjects = (p.subjects || [defaultSubject]).map(s => ({
+                            ...defaultSubject,
+                            ...s,
+                            id: s.id || Math.random(), 
+                            config: { ...defaultSubject.config, ...(s.config || {}) },
+                            manualCounts: s.manualCounts || {},
+                            excludedWeeks: Array.isArray(s.excludedWeeks) ? s.excludedWeeks : [],
+                            testWeeks: Array.isArray(s.testWeeks) ? s.testWeeks : [],
+                            dataBank: Array.isArray(s.dataBank) ? s.dataBank : [],
+                            enrichments: Array.isArray(s.enrichments) ? s.enrichments : [],
+                            template: s.template || 'standard',
+                            notes: s.notes || '',
+                            recommendations: s.recommendations || ''
+                        }));
+                        setSubjects(loadedSubjects); setActiveSubjectId(loadedSubjects[0].id); alert("تمت الاستعادة بنجاح! ✅");
+                    }
+                } catch (err) { alert("الملف تالف أو غير صالح"); console.error(err); }
+            }; reader.readAsText(fileObj);
+        };
+
+        const getHijriDate = (d) => new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+        const addDays = (d, days) => { const r = new Date(d); r.setDate(r.getDate() + days); return r; };
+
+        const updateDate = (weekId, newDateStr) => {
+            const newDates = { ...activeSubject.manualDates, [weekId]: newDateStr };
+            updateActiveSubject({ manualDates: newDates });
+        };
+
+        const resetDate = (weekId) => {
+            const newDates = { ...activeSubject.manualDates };
+            delete newDates[weekId];
+            updateActiveSubject({ manualDates: newDates });
+        };
+
+        const updateManualCount = (weekId, count) => {
+            const newCounts = { ...activeSubject.manualCounts, [weekId]: count };
+            updateActiveSubject({ manualCounts: newCounts });
+        };
+
+        const resetAllDistribution = () => {
+             if(confirm("هل أنت متأكد من تصفير جميع التوزيعات اليدوية؟")) {
+                 updateActiveSubject({ manualCounts: {} });
+             }
+        };
+
+        const allWeeks = useMemo(() => {
+            if (!activeSubject?.config?.startDate) return [];
+            const weeks = [];
+            const start = new Date(activeSubject.config.startDate);
+            const count = activeSubject.config.weeksCount || 44;
+            for (let i = 0; i < count; i++) {
+                const ws = addDays(start, i * 7);
+                const we = addDays(ws, 4);
+                const label = `أسبوع ${i+1}`;
+                const autoDate = `من: ${getHijriDate(ws)}  إلى: ${getHijriDate(we)}`;
+                weeks.push({
+                    id: i,
+                    label: label,
+                    autoDate: autoDate,
+                    isExcluded: activeSubject.excludedWeeks?.includes(i),
+                    isTest: activeSubject.testWeeks?.includes(i) 
+                });
+            }
+            return weeks;
+        }, [activeSubject?.config?.startDate, activeSubject?.config?.weeksCount, activeSubject?.excludedWeeks, activeSubject?.testWeeks]);
+
+        const activeWeeksForDistribution = useMemo(() => {
+            return allWeeks.filter(w => !w.isExcluded);
+        }, [allWeeks]);
+
+        const rowColors = ['#e0f2fe', '#f0fdf4', '#fefce8', '#fff1f2', '#f3f4f6', '#eff6ff', '#faf5ff', '#fff7ed'];
+
+        // --- خوارزمية التوزيع الجديدة (المعدلة للدمج) ---
+        const distributedData = useMemo(() => {
+            if (!activeSubject) return [];
+            
+            try {
+                // 1. تحديد الأسابيع الفعالة (ليست مستبعدة)
+                const dataBank = activeSubject.dataBank || [];
+                
+                // حساب عدد الأسابيع المخصصة للدروس 
+                // نعتبره أسبوع تدريس إذا لم يكن اختباراً، أو كان اختباراً ومحدد له عدد يدوي (هجين)
+                const instructionalWeeks = activeWeeksForDistribution.filter(w => {
+                    const isTest = activeSubject.testWeeks?.includes(w.id);
+                    const manualCount = activeSubject.manualCounts?.[w.id];
+                    return !isTest || (isTest && manualCount && manualCount !== "");
+                });
+
+                const totalIndicators = dataBank.reduce((acc, item) => acc + countItemIndicators(item), 0);
+                const instructionalWeeksCount = instructionalWeeks.length;
+                
+                const globalLimit = parseInt(activeSubject.config?.globalLimit);
+                let averageIndicatorsPerWeek = 0;
+                
+                if (globalLimit > 0) {
+                    averageIndicatorsPerWeek = globalLimit;
+                } else if (instructionalWeeksCount > 0) {
+                    averageIndicatorsPerWeek = Math.ceil(totalIndicators / instructionalWeeksCount);
+                }
+
+                const weeks = [];
+                let currentItemIndex = 0; 
+                let colorIdx = 0; 
+                
+                activeWeeksForDistribution.forEach((week, index) => {
+                    const isTest = activeSubject.testWeeks?.includes(week.id);
+                    const finalDate = activeSubject.manualDates?.[week.id] || week.autoDate;
+                    const manualCountVal = activeSubject.manualCounts?.[week.id];
+                    
+                    let weekColor = isTest ? '#f3e8ff' : rowColors[colorIdx % rowColors.length];
+                    if (!isTest) colorIdx++; 
+
+                    const weekItems = [];
+                    let currentWeekIndicatorsSum = 0;
+
+                    // 1. إذا كان الأسبوع محدداً كاختبار، نضيف عنصر الاختبار أولاً
+                    if (isTest) {
+                        weekItems.push({ 
+                            id: `test-${week.id}`, 
+                            general: 'تقويم ومراجعة', 
+                            sub: '-', 
+                            outcome: 'اختبار دوري (مهارات سابقة)', 
+                            indicators: 'مراجعة المكتسبات السابقة وتقويمها', 
+                            teacherRole: 'إعداد الاختبار والمتابعة', 
+                            studentRole: 'أداء الاختبار', 
+                            link: '',
+                            isTestItem: true
+                        });
+                        currentWeekIndicatorsSum += 1; 
+                    }
+
+                    // 2. تحديد هل نضيف دروساً من البنك في هذا الأسبوع؟
+                    let targetForThisWeek = 0;
+                    let shouldAddLessons = !isTest;
+
+                    if (manualCountVal && manualCountVal !== "") {
+                        targetForThisWeek = parseInt(manualCountVal);
+                        // إذا وضع المستخدم رقماً يدوياً في أسبوع الاختبار، يعني يريد دمج الدروس
+                        if (isTest) shouldAddLessons = true;
+                    } else if (!isTest) {
+                        targetForThisWeek = averageIndicatorsPerWeek;
+                    }
+
+                    // 3. تعبئة الدروس
+                    if (shouldAddLessons) {
+                        const hasRemainingItems = currentItemIndex < dataBank.length;
+                        
+                        if (hasRemainingItems) {
+                            while (currentItemIndex < dataBank.length) {
+                                const nextItem = dataBank[currentItemIndex];
+                                const nextItemIndCount = countItemIndicators(nextItem);
+                                
+                                // إذا كنا في آخر أسبوع تدريسي فعلي، نسحب الكل
+                                const isLastInstructionalWeek = (week.id === instructionalWeeks[instructionalWeeks.length - 1]?.id);
+
+                                if (isLastInstructionalWeek) {
+                                    weekItems.push(nextItem);
+                                    currentWeekIndicatorsSum += nextItemIndCount;
+                                    currentItemIndex++;
+                                    continue;
+                                }
+
+                                const willExceedTarget = (currentWeekIndicatorsSum + nextItemIndCount) > targetForThisWeek;
+                                
+                                // شرط الاستمرار: لم نتجاوز الهدف، أو (حالة خاصة) إذا كان أسبوع هجين ولم نضيف أي درس بعد، نضيف واحداً على الأقل
+                                if (!willExceedTarget || (weekItems.length === 1 && isTest && currentWeekIndicatorsSum < targetForThisWeek)) {
+                                    weekItems.push(nextItem);
+                                    currentWeekIndicatorsSum += nextItemIndCount;
+                                    currentItemIndex++;
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    weeks.push({ 
+                        ...week, 
+                        displayIndex: index + 1, 
+                        finalDate: finalDate, 
+                        isTest: isTest,
+                        rowColor: weekColor, 
+                        items: weekItems, 
+                        linesCount: currentWeekIndicatorsSum 
+                    });
+                });
+                return weeks;
+            } catch (err) {
+                console.error("Distribution Error:", err);
+                return []; 
+            }
+        }, [activeSubject, activeWeeksForDistribution]);
+
+        const toggleWeekExclusion = (weekId) => {
+            const current = activeSubject.excludedWeeks || [];
+            updateActiveSubject({ excludedWeeks: current.includes(weekId) ? current.filter(id => id !== weekId) : [...current, weekId].sort((a,b)=>a-b) });
+        };
+
+        const toggleTestWeek = (weekId) => {
+            const current = activeSubject.testWeeks || [];
+            updateActiveSubject({ testWeeks: current.includes(weekId) ? current.filter(id => id !== weekId) : [...current, weekId].sort((a,b)=>a-b) });
+        };
+
+        const selectAllWeeks = () => { updateActiveSubject({ excludedWeeks: [] }); };
+        const deselectAllWeeks = () => { updateActiveSubject({ excludedWeeks: allWeeks.map(w => w.id) }); };
+
+        const applyTimelineToAll = () => {
+            if(!confirm("⚠️ تحذير: هذا سيقوم بنسخ إعدادات التقويم (تاريخ البداية، الأسابيع المستبعدة، الاختبارات) من هذه المادة وتطبيقها على كافة المواد الأخرى.\n\nهل أنت متأكد؟")) return;
+            const source = activeSubject;
+            const updatedSubjects = subjects.map(sub => {
+                if (sub.id === source.id) return sub; 
+                return {
+                    ...sub,
+                    config: { ...sub.config, startDate: source.config.startDate, weeksCount: source.config.weeksCount, globalLimit: source.config.globalLimit },
+                    excludedWeeks: [...source.excludedWeeks],
+                    testWeeks: [...source.testWeeks],
+                    manualDates: {...source.manualDates}
+                };
+            });
+            setSubjects(updatedSubjects);
+            alert("تم تعميم إعدادات الزمن على جميع المواد بنجاح ✅");
+        };
+
+        const [form, setForm] = useState({ general: '', sub: '', outcome: '', indicators: '', teacherRole: '', studentRole: '', link: '', strategies: '' });
+        const [enrichForm, setEnrichForm] = useState({ title: '', url: '' });
+
+        const startEdit = (item) => { 
+            setForm({ 
+                general: item.general || '', sub: item.sub || '', outcome: item.outcome || '', indicators: item.indicators || '', 
+                teacherRole: item.teacherRole || '', studentRole: item.studentRole || '', link: item.link || '', strategies: item.strategies || '' 
+            }); 
+            setEditId(item.id); 
+        };
+        const cancelEdit = () => { setEditId(null); setForm({ general: '', sub: '', outcome: '', indicators: '', teacherRole: '', studentRole: '', link: '', strategies: '' }); };
+        
+        const addItem = () => { 
+            if(!form.outcome && !form.sub) return alert('البيانات ناقصة');
+            const newItem = { id: Date.now(), ...form, indicators: form.indicators.trim() };
+            if (editId) { 
+                updateActiveSubject({ dataBank: activeSubject.dataBank.map(item => item.id === editId ? { ...item, ...newItem, id: item.id } : item) }); 
+                setEditId(null); 
+            } else { 
+                updateActiveSubject({ dataBank: [...activeSubject.dataBank, newItem] }); 
+            }
+            setForm({ general: form.general, sub: form.sub, outcome: '', indicators: '', teacherRole: '', studentRole: '', link: '', strategies: '' }); 
+        };
+
+        const addEnrichment = () => {
+            if (!enrichForm.title || !enrichForm.url) return alert('يرجى إدخال العنوان والرابط');
+            updateActiveSubject({ enrichments: [...(activeSubject.enrichments || []), { id: Date.now(), ...enrichForm }] }); setEnrichForm({ title: '', url: '' });
+        };
+        const deleteEnrichment = (id) => { if(confirm('حذف؟')) updateActiveSubject({ enrichments: activeSubject.enrichments.filter(e => e.id !== id) }); };
+
+        if (!activeSubject) return <div className="flex h-screen items-center justify-center font-bold text-xl">جاري تحميل النظام...</div>;
+
+        return (
+            <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">
+                <div className={`no-print bg-gray-900 text-white flex flex-col h-screen border-l border-gray-700 shadow-2xl z-50 transition-all duration-300 ${showSidebar ? 'fixed inset-y-0 right-0 w-64' : 'hidden md:flex md:w-64 md:sticky md:top-0'}`}>
+                    <div className="p-4 border-b border-gray-700 bg-gray-800 flex justify-between items-center"><h1 className="text-xl font-bold text-center">منصة الخطط V13.4</h1><button onClick={()=>setShowSidebar(false)} className="md:hidden text-gray-400 hover:text-white">✕</button></div>
+                    <div className="p-3 bg-gray-800 border-b border-gray-700 flex flex-col gap-2">
+                        <div className="flex gap-2">
+                            <button onClick={exportData} title="اختصار: Ctrl+S" className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 px-2 rounded text-xs font-bold transition-colors flex items-center justify-center gap-1">⬇️ حفظ</button>
+                            <button onClick={()=>fileInputRef.current.click()} className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-1 px-2 rounded text-xs font-bold transition-colors flex items-center justify-center gap-1">⬆️ استعادة</button>
+                            <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={importData} />
+                        </div>
+                        {lastSaved && <div className="text-[10px] text-gray-400 text-center">آخر حفظ: {lastSaved.toLocaleTimeString('ar-SA')}</div>}
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scroll">
+                        {subjects.map(sub => (
+                            <div key={sub.id} onClick={() => {setActiveSubjectId(sub.id); setShowSidebar(false);}} className={`p-3 rounded-lg cursor-pointer flex justify-between items-center group transition-all ${activeSubjectId === sub.id ? 'bg-ministry-primary text-white shadow-lg translate-x-1' : 'hover:bg-gray-800 text-gray-300'}`}>
+                                <div className="truncate flex-1 font-bold text-sm" title={sub.name}>{sub.name}</div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={(e)=>{e.stopPropagation(); duplicateSubject(sub.id)}} className="text-gray-400 hover:text-green-300 px-1" title="نسخ المادة">❐</button>
+                                    <button onClick={(e)=>{e.stopPropagation(); renameSubject(sub.id, sub.name)}} className="text-gray-400 hover:text-blue-300 px-1">✏️</button>
+                                    <button onClick={(e)=>{e.stopPropagation(); deleteSubject(sub.id)}} className="text-gray-400 hover:text-red-300 px-1">✕</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-3 border-t border-gray-700 bg-gray-800"><button onClick={addNewSubject} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-bold transition-colors">+ مادة جديدة</button></div>
+                </div>
+
+                <div className="flex-1 p-4 md:p-6 overflow-y-auto no-print">
+                    <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <button onClick={()=>setShowSidebar(!showSidebar)} className="md:hidden bg-gray-800 text-white p-2 rounded-lg hover:bg-gray-700 transition-colors">☰</button>
+                            <h2 className="text-2xl font-black text-gray-800 flex items-center gap-2">تحرير: <span className="text-ministry-primary cursor-pointer hover:bg-gray-100 px-2 rounded transition-all" onClick={()=>renameSubject(activeSubject.id, activeSubject.name)}>{activeSubject.name} ✏️</span></h2>
+                        </div>
+                        <button onClick={() => window.print()} className="bg-gray-800 text-white px-6 py-2 rounded-xl font-bold hover:bg-black shadow-lg flex items-center gap-2 hover:scale-105 transition-transform"><span>🖨️</span> طباعة</button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="bg-white p-4 rounded-xl shadow-sm space-y-4 border border-gray-100">
+                            <h3 className="font-bold border-b pb-2 text-sm text-gray-600">⚙️ الإعدادات ونوع القالب</h3>
+                            <StatsDisplay dataBank={activeSubject.dataBank} template={activeSubject.template} />
+                            
+                            <div className="bg-indigo-50 p-2 rounded border border-indigo-200 mb-2">
+                                <label className="block text-xs font-bold text-indigo-900 mb-1">نوع نموذج المادة:</label>
+                                <select className="w-full p-2 rounded border border-indigo-300 text-sm" value={activeSubject.template} onChange={e=>updateActiveSubject({template: e.target.value})}>
+                                    <option value="standard">نموذج المواد العلمية (مجال/ناتج/مؤشر)</option>
+                                    <option value="reading">نموذج القراءة (نافس) (مهارة/تجزئة/أدوار)</option>
+                                </select>
+                            </div>
+
+                            <div className="bg-purple-50 p-3 rounded text-sm border border-purple-100 mt-4">
+                                <h4 className="font-bold text-purple-800 mb-2 text-xs">📝 ملاحظات وتوصيات</h4>
+                                <textarea className="w-full border p-2 rounded text-xs mb-2 h-16 resize-none outline-none focus:ring-1 focus:ring-purple-500" placeholder="ملاحظات (تظهر أعلى الجدول)" value={activeSubject.notes || ''} onChange={e=>updateActiveSubject({notes: e.target.value})}></textarea>
+                                <textarea className="w-full border p-2 rounded text-xs h-16 resize-none outline-none focus:ring-1 focus:ring-purple-500" placeholder="توصيات (تظهر في صفحة التوصيات المستقلة)" value={activeSubject.recommendations || ''} onChange={e=>updateActiveSubject({recommendations: e.target.value})}></textarea>
+                            </div>
+
+                            <div className="flex justify-center gap-2 mt-4"><ImageUploader label="الوزارة" image={logos.ministry} onUpload={img=>setLogos({...logos, ministry:img})} /><ImageUploader label="الرؤية" image={logos.vision} onUpload={img=>setLogos({...logos, vision:img})} /><ImageUploader label="نافس" image={logos.nafs} onUpload={img=>setLogos({...logos, nafs:img})} /></div>
+                            <div className="space-y-2 text-sm mt-4">
+                                <label className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded inline-block">بيانات الغلاف</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input className="border p-2 rounded bg-gray-50 focus:ring-1 focus:ring-ministry-primary outline-none text-xs" placeholder="عنوان الغلاف" value={activeSubject.coverSettings.title} onChange={e=>updateActiveSubject({ coverSettings: {...activeSubject.coverSettings, title:e.target.value} })} />
+                                    <input className="border p-2 rounded bg-gray-50 focus:ring-1 focus:ring-ministry-primary outline-none text-xs font-bold text-ministry-gold" placeholder="التاريخ/العام" value={activeSubject.coverSettings.year} onChange={e=>updateActiveSubject({ coverSettings: {...activeSubject.coverSettings, year:e.target.value} })} />
+                                </div>
+                                <label className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded inline-block mt-2">بيانات المدرسة</label>
+                                <input className="w-full border p-2 rounded bg-gray-50 font-bold focus:ring-1 focus:ring-ministry-primary outline-none" value={activeSubject.info.admin} onChange={e=>updateActiveSubject({ info: {...activeSubject.info, admin:e.target.value} })} />
+                                <div className="grid grid-cols-2 gap-2">
+                                    {Object.keys(activeSubject.info).filter(k=>k!=='admin').map(k => (<input key={k} className="border p-2 rounded bg-gray-50 focus:ring-1 focus:ring-ministry-primary outline-none" value={activeSubject.info[k]} onChange={e=>updateActiveSubject({ info: {...activeSubject.info, [k]:e.target.value} })} placeholder={k} />))}
+                                </div>
+                            </div>
+
+                            <div className="bg-blue-50 p-3 rounded text-sm border border-blue-100 mt-4">
+                                <h4 className="font-bold text-blue-800 mb-2 text-xs flex justify-between">
+                                    <span>📅 التقويم الدراسي 1447 - 1448</span>
+                                </h4>
+                                <div className="flex gap-1 mb-2">
+                                    <button onClick={()=>{
+                                        if(confirm("سيتم ضبط التقويم ليبدأ من شهر 3 عام 1447هـ.")) {
+                                            updateActiveSubject({ config: {weeksCount: 44, startDate: PRESETS.FULL_YEAR_1447}, info: {...activeSubject.info, term: 'العام الدراسي 1447'} });
+                                        }
+                                    }} className="flex-1 bg-white border border-blue-200 text-blue-700 text-[10px] py-1 rounded hover:bg-blue-100 font-bold">تطبيق التقويم الكامل</button>
+                                </div>
+                                <div className="flex flex-col gap-1 mb-2">
+                                    <label className="text-[10px] text-gray-500">بداية العام (تلقائي: 1 ربيع الأول 1447)</label>
+                                    <input type="date" className="border p-1 rounded text-xs" value={activeSubject.config.startDate} onChange={e=>updateActiveSubject({config: {...activeSubject.config, startDate:e.target.value}})} />
+                                </div>
+                                <div className="flex justify-between items-center text-xs mb-2">
+                                    <span>إجمالي الأسابيع: {activeSubject.config.weeksCount}</span>
+                                    <input type="range" min="10" max="52" value={activeSubject.config.weeksCount} onChange={e=>updateActiveSubject({config: {...activeSubject.config, weeksCount:parseInt(e.target.value)}})} className="w-16 accent-blue-600"/>
+                                </div>
+                                <div className="flex justify-between items-center text-xs mb-2">
+                                    <div className="flex items-center gap-1">
+                                        <span>توزيع ثابت (مؤشرات/أسبوع):</span>
+                                        <button onClick={resetAllDistribution} className="text-[8px] bg-red-100 text-red-600 px-1 rounded border border-red-200 hover:bg-red-200" title="تصفير كل الأعداد اليدوية">🔄</button>
+                                    </div>
+                                    <input type="number" min="1" className="w-16 border rounded text-center" placeholder="تلقائي" value={activeSubject.config.globalLimit || ''} onChange={e=>updateActiveSubject({config: {...activeSubject.config, globalLimit:e.target.value}})} />
+                                </div>
+
+                                <div className="text-[10px] text-gray-500 mb-1 font-bold">التحكم السريع في الأسابيع:</div>
+                                <div className="flex gap-2 mb-2">
+                                    <button onClick={selectAllWeeks} className="flex-1 bg-green-100 hover:bg-green-200 text-green-800 text-[10px] py-1 rounded border border-green-300">تحديد الكل (✔)</button>
+                                    <button onClick={deselectAllWeeks} className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 text-[10px] py-1 rounded border border-red-300">إلغاء تحديد الكل (✕)</button>
+                                </div>
+                                <div className="mb-2">
+                                    <button onClick={applyTimelineToAll} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded shadow-md transition-colors flex items-center justify-center gap-1">🔄 تعميم الزمن على كل المواد</button>
+                                </div>
+
+                                <div className="text-[10px] text-gray-500 mb-1">انقر للتفعيل، (📝) للاختبار، (✏️) للتاريخ:</div>
+                                <div className="max-h-60 overflow-y-auto border p-1 bg-white rounded custom-scroll">
+                                    {allWeeks.map((w, idx) => {
+                                        const distWeek = distributedData.find(dw => dw.id === w.id);
+                                        const actualIndicatorsCount = distWeek?.linesCount || 0;
+                                        const isHybrid = w.isTest && actualIndicatorsCount > 1; // هل هو هجين؟
+                                        
+                                        return (
+                                            <div key={w.id} className={`flex gap-1 text-[10px] items-center mb-1 p-1 rounded ${w.isExcluded ? 'bg-red-50 opacity-60' : (w.isTest ? 'bg-purple-50 border border-purple-200' : 'bg-green-50')}`}>
+                                                <input type="checkbox" checked={!w.isExcluded} onChange={()=>toggleWeekExclusion(w.id)} className="w-3 h-3 accent-green-600 cursor-pointer" />
+                                                <div className="flex-1 flex flex-col justify-center">
+                                                    <div className="flex justify-between items-center cursor-pointer" onClick={()=>toggleWeekExclusion(w.id)}>
+                                                        <div className="font-bold flex items-center gap-1">
+                                                            <span>{w.label}</span>
+                                                            {!w.isExcluded && !w.isTest && <span className="bg-green-200 text-green-800 px-1 rounded text-[8px]">درس</span>}
+                                                            {w.isTest && !isHybrid && !w.isExcluded && <span className="bg-purple-200 text-purple-800 px-1 rounded text-[8px]">اختبار</span>}
+                                                            {isHybrid && <span className="bg-purple-800 text-white px-1 rounded text-[8px]">هجين</span>}
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            {!w.isExcluded && (
+                                                                <div className="flex flex-col items-end">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <span className="text-[7px] text-gray-400">مؤشر/أسبوع (فعلي: {actualIndicatorsCount})</span>
+                                                                        <input type="number" min="0" className="w-12 border rounded text-[9px] text-center p-0.5 h-4" placeholder="تلقائي" value={activeSubject.manualCounts?.[w.id] || ''} onClick={(e)=>e.stopPropagation()} onChange={(e) => updateManualCount(w.id, e.target.value)} />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <button onClick={(e)=>{e.stopPropagation(); toggleTestWeek(w.id)}} className={`px-1 rounded border transition-colors h-6 ${w.isTest ? 'bg-purple-600 text-white' : 'bg-white text-gray-400 hover:text-purple-500'}`} title="تحويل لاختبار دوري">📝</button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex justify-between items-center mt-1">
+                                                        <span className="text-xs font-bold text-gray-600 truncate w-24" title={activeSubject.manualDates?.[w.id] || w.autoDate}>{activeSubject.manualDates?.[w.id] || w.autoDate}</span>
+                                                        <div className="flex gap-1">
+                                                            <button onClick={(e) => { e.stopPropagation(); const newDate = prompt("أدخل التاريخ الجديد:", activeSubject.manualDates?.[w.id] || w.autoDate); if(newDate) updateDate(w.id, newDate); }} className="text-blue-500 hover:bg-blue-100 p-1 rounded text-[8px]">✏️</button>
+                                                            {activeSubject.manualDates?.[w.id] && <button onClick={(e) => { e.stopPropagation(); resetDate(w.id); }} className="text-red-500 hover:bg-red-100 p-1 rounded text-[8px]">↺</button>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
+                             <div className="bg-orange-50 p-3 rounded text-sm border border-orange-100 mt-4">
+                                <h4 className="font-bold text-orange-800 mb-2 text-xs">🔗 الإثراءات الرقمية</h4>
+                                <div className="flex flex-col gap-2">
+                                    <input className="border p-2 rounded text-xs focus:ring-1 focus:ring-orange-500 outline-none" placeholder="عنوان الإثراء" value={enrichForm.title} onChange={e=>setEnrichForm({...enrichForm, title:e.target.value})} />
+                                    <input className="border p-2 rounded text-xs focus:ring-1 focus:ring-orange-500 outline-none text-left" placeholder="الرابط (URL)" value={enrichForm.url} onChange={e=>setEnrichForm({...enrichForm, url:e.target.value})} />
+                                    <button onClick={addEnrichment} className="bg-orange-600 text-white py-1 rounded hover:bg-orange-700 text-xs font-bold">إضافة إثراء</button>
+                                </div>
+                                <div className="mt-2 max-h-32 overflow-y-auto space-y-1 custom-scroll">
+                                    {activeSubject.enrichments && activeSubject.enrichments.map(en => (
+                                        <div key={en.id} className="flex justify-between items-center bg-white p-1 px-2 rounded border text-xs">
+                                            <span className="truncate w-3/4" title={en.title}>{en.title}</span>
+                                            <button onClick={()=>deleteEnrichment(en.id)} className="text-red-500 font-bold hover:bg-red-50 px-1 rounded">✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm space-y-4 flex flex-col h-[700px] border border-gray-100">
+                            <h3 className="font-bold border-b pb-2 text-sm text-gray-600">📚 بنك المهارات ({activeSubject.dataBank.length}) - سيوزع على {activeWeeksForDistribution.filter(w=>!activeSubject.testWeeks?.includes(w.id) || (activeSubject.manualCounts?.[w.id] > 0)).length} أسبوع دراسي</h3>
+                            <div className="space-y-2 text-sm bg-gray-50 p-3 rounded border border-gray-200">
+                                {activeSubject.template === 'reading' ? (
+                                    <>
+                                        {/* مدخلات خاصة بالقراءة */}
+                                        <div className="flex gap-2">
+                                            <input className="border p-2 rounded w-1/2 outline-none" placeholder="المجال الفرعي (مثال: فهم المقروء)" value={form.general} onChange={e=>setForm({...form, general:e.target.value})}/>
+                                            <input className="border p-2 rounded w-1/2 outline-none" placeholder="المهارة المستهدفة (مثال: استنتاج الأفكار)" value={form.sub} onChange={e=>setForm({...form, sub:e.target.value})}/>
+                                        </div>
+                                        <textarea className="border p-2 rounded w-full h-16 resize-none outline-none mt-2" placeholder="تجزئة المهارة (مثال: 1- يستخرج الفكرة... 2- يفسر...)" value={form.outcome} onChange={e=>setForm({...form, outcome:e.target.value})} />
+                                        <div className="flex gap-2 mt-2">
+                                            <textarea className="border p-2 rounded w-1/2 h-20 resize-none outline-none" placeholder="دور المعلم (اضغط Enter لسطر جديد)" value={form.teacherRole} onChange={e=>setForm({...form, teacherRole:e.target.value})} />
+                                            <textarea className="border p-2 rounded w-1/2 h-20 resize-none outline-none" placeholder="دور الطالب (اضغط Enter لسطر جديد)" value={form.studentRole} onChange={e=>setForm({...form, studentRole:e.target.value})} />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* مدخلات المواد العلمية */}
+                                        <div className="flex gap-2"><input className="border p-2 rounded w-1/3 outline-none" placeholder="المجال العام" value={form.general} onChange={e=>setForm({...form, general:e.target.value})}/><input className="border p-2 rounded w-1/3 outline-none" placeholder="المجال الفرعي" value={form.sub} onChange={e=>setForm({...form, sub:e.target.value})}/><input className="border p-2 rounded w-1/3 outline-none" placeholder="الناتج (الهدف)" value={form.outcome} onChange={e=>setForm({...form, outcome:e.target.value})}/></div>
+                                        <textarea className="border p-2 rounded w-full h-16 resize-none outline-none mt-2" placeholder="المؤشرات (اضغط Enter لسطر جديد)" value={form.indicators} onChange={e=>setForm({...form, indicators:e.target.value})} />
+                                    </>
+                                )}
+                                
+                                <div className="flex gap-2 mt-2">
+                                    <input className="border p-2 rounded flex-1 outline-none text-left" placeholder="رابط الإثراء" value={form.link} onChange={e=>setForm({...form, link:e.target.value})}/>
+                                    {activeSubject.template === 'reading' && <input className="border p-2 rounded flex-1 outline-none" placeholder="الاستراتيجيات (اختياري)" value={form.strategies} onChange={e=>setForm({...form, strategies:e.target.value})}/>}
+                                    <button onClick={addItem} className={`${editId ? 'bg-orange-600 hover:bg-orange-700' : 'bg-ministry-primary hover:bg-green-700'} text-white px-6 rounded font-bold shadow-sm transition-colors text-xs`}>{editId ? 'حفظ' : 'إضافة'}</button>
+                                    {editId && <button onClick={cancelEdit} className="bg-gray-400 hover:bg-gray-500 text-white px-4 rounded text-xs transition-colors">إلغاء</button>}
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto text-xs space-y-2 custom-scroll pr-1">
+                                {activeSubject.dataBank.map((item, i) => (
+                                    <div key={item.id} className={`flex justify-between items-start border p-3 rounded-lg hover:bg-gray-50 transition-colors ${editId === item.id ? 'bg-orange-50 border-orange-200' : 'bg-white'}`}>
+                                        <div className="flex-1">
+                                            {activeSubject.template === 'reading' ? (
+                                                <>
+                                                    <div className="font-bold text-ministry-primary text-sm mb-1">{i+1}. {item.sub} ({item.general})</div>
+                                                    <pre className="text-gray-600 font-sans whitespace-pre-wrap leading-relaxed">{item.outcome}</pre>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="font-bold text-ministry-primary text-sm mb-1">{i+1}. {item.outcome}</div>
+                                                    <div className="flex gap-2 text-[10px] text-gray-400 mb-1"><span className="bg-gray-100 px-1 rounded">{item.general}</span><span className="bg-gray-100 px-1 rounded">{item.sub}</span></div>
+                                                    <pre className="text-gray-600 font-sans whitespace-pre-wrap leading-relaxed">{item.indicators}</pre>
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col gap-1 self-center">
+                                            <button onClick={()=>startEdit(item)} className="text-blue-500 bg-blue-50 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition-colors text-xs">تعديل</button>
+                                            <button onClick={()=>{if(confirm('حذف؟')) updateActiveSubject({dataBank: activeSubject.dataBank.filter(x=>x.id!==item.id)})}} className="text-red-500 bg-red-50 px-2 py-1 rounded hover:bg-red-600 hover:text-white transition-colors text-xs">حذف</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="print-area">
+                    {activeSubject.coverSettings.show && ( <CoverPage data={{...activeSubject.coverSettings, ...activeSubject.info}} logos={logos} /> )}
+                    <div className="print-content-page bg-white">
+                        <div className="header-container" style={{borderColor: theme==='classic'?'#0E7557':(theme==='ocean'?'#1e40af':'#333')}}>
+                            <div className="flex justify-between items-center h-24 px-2">
+                                <div className="w-1/4 flex justify-start"> {logos.ministry ? <img src={logos.ministry} className="h-20 w-auto object-contain" /> : <div className="h-20 w-20 border flex items-center justify-center text-xs text-gray-400 rounded bg-gray-50">شعار الوزارة</div>} </div>
+                                <div className="w-2/4 text-center flex flex-col justify-center gap-1">
+                                    <h3 className="font-bold text-sm">المملكة العربية السعودية - وزارة التعليم</h3>
+                                    <h3 className="font-bold text-sm">{activeSubject.info.admin}</h3>
+                                    <h3 className="font-bold text-sm">{activeSubject.info.school}</h3>
+                                    <div className="mt-1 inline-block px-6 py-1 rounded-full border border-gray-300 bg-gray-50">
+                                        <h1 className="text-xl font-black">{activeSubject.coverSettings.title}</h1>
+                                    </div>
+                                </div>
+                                <div className="w-1/4 flex justify-end items-center gap-4"> {logos.nafs && <img src={logos.nafs} className="h-20 w-auto object-contain" />} {logos.vision && <img src={logos.vision} className="h-20 w-auto object-contain" />} </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-center gap-4 mb-2 text-xs font-bold">
+                            <span className="border px-4 py-1 rounded bg-gray-100 shadow-sm">المادة: {activeSubject.info.subject}</span>
+                            <span className="border px-4 py-1 rounded bg-gray-100 shadow-sm">الصف: {activeSubject.info.grade}</span>
+                            <span className="border px-4 py-1 rounded bg-gray-100 shadow-sm">{activeSubject.info.term}</span>
+                        </div>
+
+                        {activeSubject.notes && (
+                            <div className="w-[98%] mx-auto mb-1 p-2 border-r-4 border-red-500 bg-red-50/50 rounded">
+                                <h3 className="text-red-600 font-bold text-sm mb-1">🔴 ملاحظات:</h3>
+                                <p className="text-gray-800 text-xs whitespace-pre-wrap leading-relaxed">{activeSubject.notes}</p>
+                            </div>
+                        )}
+
+                        <table className={`theme-table theme-${theme}`}>
+                            <thead>
+                                <tr className="spacer-row"><td colSpan={activeSubject.template === 'reading' ? 8 : 6} className="header-spacer"></td></tr>
+                                <tr>
+                                    <th style={{width: '5%'}}>الأسبوع</th>
+                                    {activeSubject.template === 'reading' ? (
+                                        <>
+                                            <th style={{width: '10%'}}>المجال الفرعي</th>
+                                            <th style={{width: '15%'}}>المهارة المستهدفة</th>
+                                            <th style={{width: '20%'}}>تجزئة المهارة</th>
+                                            <th style={{width: '15%'}}>دور المعلم</th>
+                                            <th style={{width: '15%'}}>دور الطالب</th>
+                                            <th style={{width: '10%'}}>الاستراتيجية</th>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <th style={{width: '12%'}}>المجال العام</th>
+                                            <th style={{width: '12%'}}>المجال الفرعي</th>
+                                            <th style={{width: '22%'}}>نواتج التعلم</th>
+                                            <th style={{width: '38%'}}>المؤشرات</th>
+                                        </>
+                                    )}
+                                    <th style={{width: '5%'}}>إثراء</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr className="footer-spacer-row"><td colSpan={activeSubject.template === 'reading' ? 8 : 6}></td></tr>
+                            </tfoot>
+                            <tbody>
+                                {activeSubject.printMode === 'weekly' ? distributedData.map(w => (
+                                    w.items.length > 0 ? w.items.map((item, idx) => (
+                                        <tr key={item.id} style={{backgroundColor: w.rowColor}}>
+                                            {idx === 0 && <td rowSpan={w.items.length} className="week-cell">
+                                                <div className="text-sm font-black text-gray-800">الأسبوع {w.displayIndex}</div>
+                                                <div className="text-[9px] mt-1 font-normal text-gray-600 leading-tight">{w.finalDate}</div>
+                                            </td>}
+                                            {activeSubject.template === 'reading' ? (
+                                                <>
+                                                    <td className={`text-center font-bold ${item.isTestItem ? 'text-purple-900 bg-purple-100' : ''}`}>{item.general}</td>
+                                                    <td className="text-center">{item.sub}</td>
+                                                    <td className={`font-bold ${item.isTestItem ? 'text-purple-900' : ''}`}>
+                                                        <ul className="list-disc pr-4 m-0 space-y-1">{item.outcome.split(/\n+/).filter(Boolean).map((x,i)=><li key={i}>{x}</li>)}</ul>
+                                                    </td>
+                                                    <td className="text-sm">
+                                                        <ul className="list-disc pr-4 m-0 space-y-1">{item.teacherRole.split(/\n+/).filter(Boolean).map((x,i)=><li key={i}>{x}</li>)}</ul>
+                                                    </td>
+                                                    <td className="text-sm">
+                                                        <ul className="list-disc pr-4 m-0 space-y-1">{item.studentRole.split(/\n+/).filter(Boolean).map((x,i)=><li key={i}>{x}</li>)}</ul>
+                                                    </td>
+                                                    <td className="text-center text-[10px]">{item.strategies || 'النمذجة/التعلم النشط'}</td>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <td className={`text-center font-bold ${item.isTestItem ? 'text-purple-900 bg-purple-100' : ''}`}>{item.general}</td>
+                                                    <td className="text-center">{item.sub}</td>
+                                                    <td className={`font-bold text-gray-900 ${item.isTestItem ? 'text-purple-900' : ''}`}>{item.outcome}</td>
+                                                    <td>
+                                                        {item.isTestItem ? 
+                                                            <p className="font-bold text-purple-900">{item.indicators}</p> : 
+                                                            <ul className="list-disc pr-4 m-0 text-gray-800 space-y-1">{item.indicators.split(/\n+/).filter(Boolean).map((x,i)=><li key={i}>{x}</li>)}</ul>
+                                                        }
+                                                    </td>
+                                                </>
+                                            )}
+                                            <td className="text-center align-middle"><QrCode value={item.link}/></td>
+                                        </tr>
+                                    )) : (
+                                        <tr key={w.id} style={{backgroundColor: w.rowColor}}>
+                                            <td className="week-cell">
+                                                <div className="text-sm font-black text-gray-800">الأسبوع {w.displayIndex}</div>
+                                                <div className="text-[9px] mt-1 font-normal text-gray-600 leading-tight">{w.finalDate}</div>
+                                            </td>
+                                            <td colSpan={activeSubject.template === 'reading' ? 7 : 5} className="text-center align-middle py-8 text-gray-400 font-bold border-dashed border-gray-300">
+                                                {w.isTest ? 
+                                                    '(أسبوع اختبار دوري - مراجعة وتقويم)' : 
+                                                    '(لا يوجد بيانات للتوزيع في هذا الأسبوع - قد تكون جميع المهارات قد تم توزيعها)'}
+                                            </td>
+                                        </tr>
+                                    )
+                                )) : activeSubject.dataBank.map((item, i) => (
+                                    <tr key={item.id}>
+                                            <td className="text-center font-bold bg-gray-50">{i+1}</td>
+                                            {activeSubject.template === 'reading' ? (
+                                                <>
+                                                    <td>{item.general}</td><td>{item.sub}</td><td>{item.outcome}</td><td>{item.teacherRole}</td><td>{item.studentRole}</td><td>{item.strategies}</td>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <td>{item.general}</td><td>{item.sub}</td><td>{item.outcome}</td><td>{item.indicators}</td>
+                                                </>
+                                            )}
+                                            <td className="text-center align-middle"><QrCode value={item.link}/></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        <div className="mt-8">
+                            <div className="grid grid-cols-3 gap-8 w-full border-t border-gray-400 pt-4 px-12">
+                                <div className="text-center"><p className="text-[10px] font-bold text-gray-500 mb-1">معد الخطة</p><p className="font-bold text-sm">{activeSubject.info.teacher}</p></div>
+                                <div className="text-center"><p className="text-[10px] font-bold text-gray-500 mb-1">مشرف الدعم</p><p className="font-bold text-sm">{activeSubject.info.supervisor}</p></div>
+                                <div className="text-center"><p className="text-[10px] font-bold text-gray-500 mb-1">مدير المدرسة</p><p className="font-bold text-sm">{activeSubject.info.principal}</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <RecommendationsPage data={activeSubject.info} logos={logos} recommendations={activeSubject.recommendations} />
+                    <EnrichmentsPage data={activeSubject.info} logos={logos} enrichments={activeSubject.enrichments} />
+                </div>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>

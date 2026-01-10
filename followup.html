@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل المتابعة - الراشدون (الإداري)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root { --primary: #1e5f74; --bg: #f5f6fa; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+
+        .sheet {
+            background: white; width: 210mm; min-height: 297mm; margin: 0 auto; padding: 10mm 15mm; 
+            border-top: 10px solid var(--primary); border-bottom: 10px solid var(--primary);
+            display: flex; flex-direction: column; box-shadow: 0 0 10px rgba(0,0,0,0.1); box-sizing: border-box;
+        }
+
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px double #ccc; padding-bottom: 15px; margin-bottom: 10px; height: 120px; }
+        .logo-box { width: 110px; height: 110px; border: 1px dashed #bbb; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; flex-shrink: 0; background-color: #fafafa; border-radius: 8px; }
+        .logo-box img { width: 100%; height: 100%; object-fit: contain; display: none; }
+        .titles { text-align: center; flex-grow: 1; padding: 0 10px; }
+        .titles h1 { color: var(--primary); margin: 5px 0; font-size: 22px; }
+        .titles h3 { margin: 2px 0; font-weight: normal; font-size: 14px; }
+        .titles h2 { margin: 5px 0; font-weight: bold; font-size: 16px; text-decoration: underline; }
+
+        .controls { background: #2c3e50; color: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+        button { cursor: pointer; padding: 8px 12px; border-radius: 5px; border: none; font-family: 'Tajawal'; font-weight: bold; font-size: 13px; }
+        .btn-print { background: #f1c40f; color: black; }
+        .btn-excel { background: #217346; color: white; border: 1px solid #1e6b40; }
+        .btn-distribute { background: #e67e22; color: white; border: 1px solid #d35400; }
+        .btn-add { background: #333; color: white; width: 100%; margin-top: 5px; padding: 8px; }
+        .btn-del { background: #c0392b; color: white; }
+        .btn-fix { background: #8e44ad; color: white; border: 1px solid #732d91; }
+        .btn-backup { background: #2980b9; color: white; border: 1px solid #2c3e50; }
+        
+        .btn-link-del { background: #fff; border: 1px solid #c0392b; color: #c0392b; font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-top: 3px; }
+        .btn-link-del:hover { background: #c0392b; color: white; }
+
+        select { padding: 8px; width: 250px; border-radius: 5px; font-family: 'Tajawal'; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        thead { display: table-header-group; }
+        th { background: var(--primary) !important; color: white !important; padding: 8px; border: 1px solid #000; -webkit-print-color-adjust: exact; }
+        td { border: 1px solid #000; padding: 5px 2px; text-align: center; vertical-align: middle; }
+        
+        .status { padding: 4px 8px; border-radius: 15px; font-size: 11px; cursor: pointer; display: inline-block; width: 80px; user-select: none; }
+        .done { background: #d4edda; color: #155724; font-weight: bold; border: 1px solid #c3e6cb; }
+        .pending { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .incomplete { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        .footer { margin-top: auto; display: flex; justify-content: space-between; padding-top: 40px; page-break-inside: avoid; }
+        .sign { text-align: center; width: 35%; }
+        .line { border-top: 1px solid #000; margin-top: 50px; width: 80%; margin-left: auto; margin-right: auto; }
+        .qr-img { width: 50px; height: 50px; }
+        .link-btn { font-size: 11px; text-decoration: none; color: #0056b3; font-weight: bold; display: block; margin-top: 2px; }
+
+        @media print {
+            @page { size: A4 portrait; margin: 1.5cm 1cm; }
+            body { background: white; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+            .controls, .btn-add, .del-col, .no-print, .btn-link-del { display: none !important; }
+            .sheet { width: 100%; margin: 0; padding: 0; border: none; box-shadow: none; }
+            .logo-box { border: none; } 
+            .link-btn { display: block !important; color: #000 !important; text-decoration: underline; font-size: 9px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls no-print">
+    <div style="flex-grow: 1;">
+        <label>اختر الدورة:</label><br>
+        <select id="courseSelect" onchange="loadCourseData()"></select>
+    </div>
+    
+    <div style="display:flex; gap:5px; align-items: center; flex-wrap: wrap;">
+        <button class="btn-backup" onclick="exportData()">📦 حفظ نسخة احتياطية</button>
+        <input type="file" id="backupFile" hidden accept=".json" onchange="importData(this)">
+        <button class="btn-backup" style="background:#7f8c8d" onclick="document.getElementById('backupFile').click()">♻️ استعادة نسخة</button>
+        
+        <div style="width:1px; height:20px; background:#aaa; margin:0 5px;"></div>
+
+        <button class="btn-fix" onclick="fixDuplicates()">🛠️ معالجة التكرار</button> 
+        <button class="btn-distribute" onclick="distributeStaff()">👥 توزيع الأسماء تلقائياً</button>
+        
+        <input type="file" id="excelFile" hidden accept=".xlsx, .xls" onchange="processExcel(this)">
+        <button class="btn-excel" onclick="document.getElementById('excelFile').click()">📂 استيراد Excel</button>
+        
+        <button class="btn-del" onclick="clearData()">🗑️ حذف الكل</button>
+        <button class="btn-print" onclick="window.print()">🖨️ طباعة</button>
+    </div>
+</div>
+
+<div class="sheet">
+    <header>
+        <div class="logo-box" onclick="document.getElementById('l1').click()" title="انقر لتغيير الشعار">
+            <img id="img1" src="">
+            <span class="no-print" id="txt1">شعار 1<br><small>(اضغط هنا)</small></span>
+            <input type="file" id="l1" hidden accept="image/*" onchange="setLogo(this, 'img1', 'txt1')">
+        </div>
+
+        <div class="titles">
+            <h3 id="h_ministry" contenteditable="true">المملكة العربية السعودية - وزارة التعليم</h3>
+            <h3 id="h_admin" contenteditable="true">الإدارة العامة للتعليم بمنطقة عسير</h3>
+            <h1 id="h_school" contenteditable="true">ابتدائية ومتوسطة الراشدون</h1>
+            <h2 id="h_docTitle" contenteditable="true">كشف حضور وإنجاز البرامج التدريبية</h2>
+        </div>
+
+        <div class="logo-box" onclick="document.getElementById('l2').click()" title="انقر لتغيير الشعار">
+            <img id="img2" src="">
+            <span class="no-print" id="txt2">شعار 2<br><small>(اضغط هنا)</small></span>
+            <input type="file" id="l2" hidden accept="image/*" onchange="setLogo(this, 'img2', 'txt2')">
+        </div>
+    </header>
+
+    <div style="text-align:center; border:2px solid var(--primary); padding:8px; margin-bottom:10px; border-radius:5px; background:#eaf6f6; -webkit-print-color-adjust: exact;">
+        <h2 id="courseTitleDisplay" contenteditable="true" style="margin:0; color:var(--primary); font-size:16px;">--</h2>
+    </div>
+
+    <table id="myTable">
+        <thead>
+            <tr>
+                <th width="5%">م</th>
+                <th width="30%">الاسم الثلاثي</th>
+                <th width="15%">الحالة</th> 
+                <th width="15%">رابط الشهادة</th> 
+                <th width="25%">الأسباب / الملاحظات</th>
+                <th width="10%" class="del-col no-print">حذف</th>
+            </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+    </table>
+    
+    <button class="btn-add no-print" onclick="addRow()">+ إضافة اسم يدوياً</button>
+
+    <div class="footer">
+        <div class="sign">
+            <p contenteditable="true" style="font-weight:bold">مسؤول التطوير المهني</p>
+            <p contenteditable="true">لجنة التميز بالمدرسة</p>
+            <div class="line"></div>
+        </div>
+        <div class="sign">
+            <p contenteditable="true" style="font-weight:bold">مدير المدرسة</p>
+            <p contenteditable="true">أحمد سالم الشهري</p>
+            <div class="line"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, update, remove, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqG4A1sx02N1HNR0bqUHMh7EUGEK1vvxU",
+      authDomain: "my-report-e8538.firebaseapp.com",
+      databaseURL: "https://my-report-e8538-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "my-report-e8538",
+      storageBucket: "my-report-e8538.firebasestorage.app",
+      messagingSenderId: "1058251518699",
+      appId: "1:1058251518699:web:8a3d68d4c69de53a5d84ae"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const staffLists = {
+        teachers: [
+            "أحمد إبراهيم علي آل صيود عسيري", "أحمد بن سعيد بن علي عسيري", "أحمد علي حسن آل ذياب",
+            "أحمد علي محمد آل المعيد", "أحمد قناعي أحمد عسيري", "أحمد محمد مسفر المجنب عسيري",
+            "بلغيث محمد بلغيث الخالدي", "جابر أحمد علي آل مقاضمة عسيري", "جمال علي مفرح الشهري",
+            "حسن يحيى حسن الشهري", "خالد علي عبدالله الشهري", "سالم حسن عوض الشهري",
+            "عادل صالح جريبيع الزهراني", "عامر أحمد محمد الشهري", "عامر حسن أحمد عسيري",
+            "عامر عبدالله علي الشهري", "علي إبراهيم محمد عسيري", "علي بن أحمد بن علي الشهري",
+            "علي شبيلي حسن آل صفوان الشهري", "علي محمد علي الشيخي عسيري", "علي محمد يحيى حكمي",
+            "علي هاشم محمد الهاشمي", "عوض أحمد الشهري", "عيسى يحيى سعيد عسيري",
+            "فهد بن نواف بن محمد الزياني الشهري", "محمد حسن جابر الخلفي", "محمد علي عامر المحفوظي الأسمري",
+            "محمد علي محمد آل معنتر عسيري", "محمد ناصر محمد آل محمد الأسمري", "محمد هيازع مانع الشهري",
+            "مدهش عوض مدهش الفقيه", "يحيى محمد مانع الشهري"
+        ],
+        admins: [
+            "محمد أحمد علي الشهري", "حسن علي محمد الشهري",
+            "محمد جابر أحمد عسيري", "حسن معدي عسيري"
+        ],
+        counselor: ["جمال علي مفرح الشهري"],
+        arabic: [], science: [], math: []
+    };
+
+    const courseTemplates = [
+        "التخطيط للتدريس (معلمون) | ١-٥ / ٧",      
+        "التدريس الفعال (معلمون) | ٨-١٢ / ٧",       
+        "إدارة البيئة الصفية (معلمون) | ٢٩-٣ / ٨",   
+        "التقويم من أجل التعلم (معلمون) | ٦-١٠ / ٨", 
+        "إدارة الأداء الوظيفي (إداريون و معلمين) | ١٣-١٧ / ٨", // تم تعديل الاسم
+        "تعزيز الأساليب (عربي) | ٢٠-٢٤ / ٨",        
+        "تعزيز الأساليب (علوم) | ٢٠-٢٤ / ٨",        
+        "تعزيز الأساليب (رياضيات) | ٢٠-٢٤ / ٨",
+        "برامج التوجيه الطلابي (الموجه) | خاص"      
+    ];
+    
+    let tableData = [];
+    let currentCourseIdx = 0;
+
+    window.onload = function() {
+        const sel = document.getElementById('courseSelect');
+        courseTemplates.forEach((c, i) => {
+            let op = document.createElement('option');
+            op.value = i; op.text = c; sel.appendChild(op);
+        });
+        try {
+            if(localStorage.getItem('logo1')) showLogo('img1', 'txt1', localStorage.getItem('logo1'));
+            if(localStorage.getItem('logo2')) showLogo('img2', 'txt2', localStorage.getItem('logo2'));
+        } catch(e) {}
+        loadCourseData();
+    };
+
+    // ==========================================================
+    // 📦 وظائف النسخ الاحتياطي (جديد)
+    // ==========================================================
+    window.exportData = function() {
+        if(tableData.length === 0) { alert("لا توجد بيانات لتصديرها."); return; }
+        const fileName = `Backup_Course_${currentCourseIdx}_${new Date().toISOString().slice(0,10)}.json`;
+        const dataStr = JSON.stringify(tableData, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = fileName; a.click();
+    };
+
+    window.importData = function(input) {
+        if(!input.files[0]) return;
+        if(!confirm("⚠️ تحذير: استعادة النسخة ستحذف البيانات الحالية لهذه الدورة وتستبدلها بالنسخة الاحتياطية. هل أنت متأكد؟")) {
+            input.value = ""; return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                // حذف البيانات الحالية واستبدالها
+                set(ref(db, `Ali_Training_Data/${currentCourseIdx}`), null).then(() => {
+                   importedData.forEach(row => {
+                       // إزالة المعرف القديم لتوليد جديد أو الاحتفاظ به
+                       const { id, ...cleanRow } = row; 
+                       push(ref(db, `Ali_Training_Data/${currentCourseIdx}`), cleanRow);
+                   });
+                   alert("✅ تم استعادة النسخة بنجاح.");
+                });
+            } catch(err) { alert("❌ الملف غير صالح."); }
+        };
+        reader.readAsText(input.files[0]);
+        input.value = "";
+    };
+
+    // ==========================================================
+    // 🛠️ دالة معالجة التكرار
+    // ==========================================================
+    window.fixDuplicates = function() {
+        if(!confirm("سيتم دمج التكرارات والاحتفاظ بالبيانات المكتملة. هل أنت موافق؟")) return;
+
+        let groups = {};
+        tableData.forEach(row => {
+            let cleanName = row.n.trim();
+            if(!groups[cleanName]) groups[cleanName] = [];
+            groups[cleanName].push(row);
+        });
+
+        let deletedCount = 0;
+
+        for (let name in groups) {
+            let rows = groups[name];
+            if (rows.length > 1) {
+                // ترتيب الصفوف: المكتمل أولاً، ثم الذي به رابط، ثم الجديد
+                rows.sort((a, b) => {
+                    if (a.link && !b.link) return -1;
+                    if (!a.link && b.link) return 1;
+                    if (a.s > b.s) return -1; 
+                    if (a.s < b.s) return 1;
+                    return 0;
+                });
+                // حذف الباقي (المكررات الأقل أهمية)
+                for (let i = 1; i < rows.length; i++) {
+                    remove(ref(db, `Ali_Training_Data/${currentCourseIdx}/${rows[i].id}`));
+                    deletedCount++;
+                }
+            }
+        }
+        alert(deletedCount > 0 ? `✅ تم دمج ${deletedCount} تكرار.` : "لا يوجد تكرار.");
+    };
+
+    // ==========================================================
+    // 👥 توزيع الأسماء (تم التعديل لإضافة المعلمين للدورة 4)
+    // ==========================================================
+    window.distributeStaff = function() {
+        if(!confirm("سيتم توزيع الأسماء... (لن يتم حذف البيانات القديمة).")) return;
+        const addBatch = (courseIndex, namesArray) => {
+            if(!namesArray || namesArray.length === 0) return;
+            namesArray.forEach(name => {
+                push(ref(db, `Ali_Training_Data/${courseIndex}`), {
+                    n: name, s: 0, r: "", link: ""
+                });
+            });
+        };
+        addBatch(0, staffLists.teachers);
+        addBatch(1, staffLists.teachers);
+        addBatch(2, staffLists.teachers);
+        addBatch(3, staffLists.teachers);
+        
+        // تعديل هام: الدورة 4 تشمل الإداريين + المعلمين
+        addBatch(4, staffLists.admins);
+        addBatch(4, staffLists.teachers);
+
+        addBatch(5, staffLists.arabic);
+        addBatch(6, staffLists.science);
+        addBatch(7, staffLists.math);
+        addBatch(8, staffLists.counselor);
+        alert("✅ تم التوزيع. (استخدم زر 'معالجة التكرار' إذا ظهرت أسماء مكررة).");
+    };
+
+    window.processExcel = function(input) {
+        if(!input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const workbook = XLSX.read(e.target.result, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                let count = 0;
+                rows.forEach(r => {
+                    if(r.length > 0 && typeof r[0] === 'string' && r[0].trim().length > 3) {
+                        const name = r[0].trim();
+                        if(!name.includes("الاسم") && !name.includes("المعلم")) {
+                            push(ref(db, `Ali_Training_Data/${currentCourseIdx}`), { n: name, s: 0, r: "", link: "" });
+                            count++;
+                        }
+                    }
+                });
+                if(count > 0) alert(`✅ تم استيراد ${count} اسم.`);
+            } catch(err) { alert("❌ خطأ: " + err.message); }
+        };
+        reader.readAsArrayBuffer(input.files[0]);
+        input.value=""; 
+    }
+
+    window.loadCourseData = function() {
+        currentCourseIdx = document.getElementById('courseSelect').value;
+        document.getElementById('courseTitleDisplay').innerText = courseTemplates[currentCourseIdx];
+        const dataRef = ref(db, `Ali_Training_Data/${currentCourseIdx}`);
+        document.getElementById('tbody').innerHTML = '<tr><td colspan="6">جاري جلب البيانات...</td></tr>';
+
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val();
+            tableData = [];
+            
+            if(data && typeof data === 'object') {
+                try {
+                    Object.keys(data).forEach(key => {
+                        if (data[key] && typeof data[key] === 'object') {
+                            tableData.push({ id: key, ...data[key] });
+                        }
+                    });
+                } catch(e) { console.error("Error parsing data:", e); }
+            } else if (data) {
+                console.warn("Corrupted data detected.");
+            }
+            renderTable();
+        }, (error) => {
+            document.getElementById('tbody').innerHTML = '<tr><td colspan="6" style="color:red">خطأ في الاتصال بالقاعدة</td></tr>';
+        });
+    }
+
+    window.removeLink = function(id) {
+        if(confirm("حذف الرابط والعودة للحالة 'غير مكتمل'؟")) {
+            update(ref(db, `Ali_Training_Data/${currentCourseIdx}/${id}`), { link: "", s: 0, r: "" });
+        }
+    };
+
+    function renderTable() {
+        const tb = document.getElementById('tbody');
+        tb.innerHTML = "";
+        
+        if(tableData.length === 0) {
+            tb.innerHTML = '<tr><td colspan="6" style="padding:20px; color:#777;">القائمة فارغة.</td></tr>';
+            return;
+        }
+
+        tableData.sort((a, b) => a.n.localeCompare(b.n, 'ar'));
+
+        tableData.forEach((row, i) => {
+            const qrUrl = row.link ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(row.link)}` : '';
+            
+            let statusClass = 'incomplete';
+            let statusText = 'غير مكتمل ❌';
+            if (row.s === 1) { statusClass = 'pending'; statusText = 'قيد التنفيذ ⏳'; }
+            else if (row.s === 2) { statusClass = 'done'; statusText = 'مكتمل ✅'; }
+
+            tb.innerHTML += `
+                <tr>
+                    <td>${i+1}</td>
+                    <td contenteditable="true" onblur="updateField('${row.id}', 'n', this.innerText)">${row.n}</td>
+                    <td><span class="status ${statusClass}" onclick="toggleStatus('${row.id}', ${row.s})">${statusText}</span></td>
+                    <td class="qr-cell">
+                        ${row.link ? 
+                            `<div style="display:flex; flex-direction:column; align-items:center;">
+                                <img src="${qrUrl}" class="qr-img" alt="QR">
+                                <a href="${row.link}" target="_blank" class="link-btn">فتح 🔗</a>
+                                <button class="btn-link-del no-print" onclick="removeLink('${row.id}')" title="حذف الرابط فقط">🗑️ حذف الرابط</button>
+                             </div>` 
+                            : '<span style="color:#ccc; font-size:10px;">لا يوجد</span>'}
+                    </td>
+                    <td contenteditable="true" onblur="updateField('${row.id}', 'r', this.innerText)">${row.r || ''}</td>
+                    <td class="del-col no-print"><span style="color:red; cursor:pointer; font-weight:bold;" onclick="delRow('${row.id}')">✖</span></td>
+                </tr>
+            `;
+        });
+    }
+
+    window.updateField = (id, field, val) => update(ref(db, `Ali_Training_Data/${currentCourseIdx}/${id}`), { [field]: val });
+    window.toggleStatus = (id, s) => update(ref(db, `Ali_Training_Data/${currentCourseIdx}/${id}`), { s: (s + 1) % 3 });
+    window.delRow = (id) => { if(confirm("حذف هذا الاسم نهائياً؟")) remove(ref(db, `Ali_Training_Data/${currentCourseIdx}/${id}`)); };
+    window.addRow = () => { push(ref(db, `Ali_Training_Data/${currentCourseIdx}`), { n: "اسم جديد...", s: 0, r: "", link: "" }); };
+    window.clearData = () => { if(confirm("⚠️ تحذير: سيتم حذف جميع الأسماء!")) remove(ref(db, `Ali_Training_Data/${currentCourseIdx}`)); };
+    
+    window.setLogo = (inp, imgId, txtId) => {
+        if(inp.files[0]) {
+            const r = new FileReader();
+            r.onload = e => {
+                try { localStorage.setItem(imgId==='img1'?'logo1':'logo2', e.target.result); } catch(err){}
+                showLogo(imgId, txtId, e.target.result);
+            };
+            r.readAsDataURL(inp.files[0]);
+        }
+    }
+    window.showLogo = (imgId, txtId, src) => {
+        const img = document.getElementById(imgId);
+        img.src = src; img.style.display='block';
+        document.getElementById(txtId).style.display='none';
+        img.parentElement.style.border = 'none';
+    }
+</script>
+
+</body>
+</html>

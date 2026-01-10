@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام الراشدون الشامل - المحدث</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0f172a', 800: '#1e293b', 700: '#334155' }
+                    },
+                    fontFamily: { sans: ['Tajawal', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+        body { font-family: 'Tajawal', sans-serif; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .show-in-print { display: none; }
+        .referral-print-area { display: none; }
+        .cover-page { display: none; }
+
+        /* تنسيقات الطباعة */
+        @media print {
+            @page { 
+                size: A4 portrait; 
+                margin: 10mm 0 10mm 0; 
+            }
+
+            @page :first {
+                margin: 0 !important;
+            }
+            
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: white !important;
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+                overflow: visible !important;
+            }
+
+            .no-print, aside, .sidebar, .connection-status, button, .app-header, .mobile-header, ::-webkit-scrollbar { 
+                display: none !important; 
+            }
+            
+            main.main-content, #root, .main-layout {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: none !important;
+                display: block !important;
+                background-color: white !important;
+            }
+
+            body:not(.printing-referral) main.main-content > *:not(.cover-page):not(.mobile-header) {
+                width: 90% !important; 
+                margin-left: auto !important; 
+                margin-right: auto !important; 
+                padding-top: 0 !important; 
+            }
+
+            /* صفحة الغلاف */
+            .cover-page {
+                display: flex !important;
+                flex-direction: column;
+                justify-content: space-between;
+                align-items: center;
+                width: 100% !important;
+                height: 100vh !important;
+                page-break-after: always !important;
+                break-after: always !important;
+                position: relative;
+                overflow: hidden;
+                background-color: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                z-index: 9999;
+                left: 0;
+                top: 0;
+            }
+
+            .wave-bg-top { position: absolute; top: 0; left: 0; width: 100%; height: 250px; z-index: 0; }
+            .wave-bg-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 250px; z-index: 0; transform: rotate(180deg); }
+            
+            .cover-content {
+                z-index: 10;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                padding: 20px 0;
+            }
+
+            /* --- تنسيقات نموذج الإحالة --- */
+            body.printing-referral main > :not(.referral-print-area) { display: none !important; }
+            
+            body.printing-referral .referral-print-area { 
+                display: block !important; 
+                width: 90% !important; 
+                margin: 0 auto !important;
+                min-height: 100vh;
+                height: auto;
+                padding: 10mm 0; 
+                font-family: 'Times New Roman', serif !important;
+                position: relative;
+                overflow: hidden;
+                background-color: white !important;
+            }
+            body.printing-referral .print-footer { display: none !important; }
+            
+            /* العلامة المائية */
+            .watermark-grid {
+                position: absolute;
+                top: 30px !important;
+                left: 30px !important;
+                width: 100%;
+                height: 100%;
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr); 
+                grid-template-rows: repeat(5, 1fr);       
+                z-index: 9999 !important;
+                pointer-events: none;
+                overflow: hidden;
+            }
+            .watermark-item {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transform: rotate(45deg); 
+                opacity: 0.10; 
+                font-size: 16px;
+                color: #000;
+                font-family: Arial, sans-serif;
+                white-space: nowrap;
+                font-weight: bold;
+                direction: ltr;
+            }
+            
+            .referral-content {
+                position: relative;
+                z-index: 10;
+            }
+
+            /* الجدول الرسمي */
+            .official-table {
+                width: 100%;
+                border-collapse: collapse;
+                direction: rtl;
+                margin-top: 15px;
+                margin-bottom: 20px;
+                border: 2px solid #000;
+            }
+
+            .official-table th {
+                background-color: #e6f2ff !important; 
+                color: #c2410c !important; 
+                font-weight: bold;
+                border: 1px solid #000;
+                padding: 6px;
+                font-size: 14px;
+                text-align: center;
+                -webkit-print-color-adjust: exact !important;
+            }
+
+            .official-table td {
+                border: 1px solid #000;
+                padding: 6px;
+                font-size: 14px;
+                font-weight: bold;
+                text-align: center;
+            }
+            
+            .official-table td.text-right-cell {
+                text-align: right !important;
+                padding-right: 10px !important;
+            }
+
+            .double-line-header {
+                border-top: 4px double #000;
+                margin: 10px 0 25px 0;
+                width: 100%;
+            }
+            
+            .double-line-divider {
+                border-top: 4px double #000;
+                margin: 15px 0;
+                width: 100%;
+            }
+
+            .header-grid { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; font-weight: bold; font-size: 14px; line-height: 1.5; }
+
+            /* تذييل الصفحة - مصحح */
+            .page-footer-container {
+                position: absolute;
+                bottom: 10mm;
+                left: 0;
+                right: 0;
+                width: 100%;
+                border-top: 1px solid #000;
+                padding-top: 5px;
+                display: block; 
+                font-size: 12px;
+                font-weight: normal;
+                font-family: Arial, sans-serif;
+                color: #000;
+                z-index: 20; 
+                background: white; 
+                height: 30px;
+            }
+
+            .page-footer-container .center-content {
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+                top: 8px;
+            }
+            
+            .page-footer-container .left-content {
+                position: absolute;
+                left: 0;
+                top: 8px;
+                direction: ltr;
+            }
+
+            /* طباعة التقارير العادية */
+            body:not(.printing-referral) .show-in-print { display: flex !important; width: 100% !important; justify-content: space-between; }
+            
+            body:not(.printing-referral) .print-card { 
+                break-inside: avoid; 
+                border: 1px solid #000; 
+                margin-bottom: 15px; 
+                box-shadow: none !important;
+                width: 100% !important;
+            }
+            
+            .print-stats-summary {
+                display: flex !important;
+                flex-direction: row !important;
+                width: 100% !important;
+                border: 2px solid #000 !important;
+                border-radius: 10px !important;
+                padding: 10px !important;
+                margin-bottom: 20px !important;
+                align-items: center !important;
+                justify-content: space-around !important;
+                break-inside: avoid !important;
+                background-color: #fff !important;
+            }
+            
+            .chart-print-view {
+                width: 120px !important;
+                height: 120px !important;
+                display: block !important;
+            }
+
+            input, textarea { border: none !important; background: transparent !important; resize: none; }
+            .qr-image-print { width: 50px; height: 50px; }
+            .print-link-blue { font-size: 8px; color: blue; text-decoration: underline; display: block; }
+            
+            .print-borders { width: 100% !important; border-collapse: collapse !important; }
+            .print-borders th, .print-borders td { 
+                border: 1px solid #000 !important; 
+                padding: 4px !important; 
+            }
+            .print-borders th { 
+                background-color: #f0f0f0 !important; 
+                -webkit-print-color-adjust: exact !important; 
+            }
+        }
+        
+        .ref-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; direction: rtl; }
+        .ref-table th, .ref-table td { border: 1px solid #000; padding: 6px; text-align: center; }
+        .dashed-border { border-bottom: 1px dashed #000; width: 100%; display: inline-block; height: 18px; }
+    </style>
+</head>
+<body class="bg-gray-100 text-slate-800 dark:bg-dark-900 dark:text-slate-100 transition-colors duration-300">
+
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useRef, useEffect, useMemo } = React;
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBS0a3Gp2HjdU3c3T7LeBMNWEhjuhXiQs0", 
+        authDomain: "momtaz-b6216.firebaseapp.com",
+        projectId: "momtaz-b6216",
+        storageBucket: "momtaz-b6216.firebasestorage.app",
+        messagingSenderId: "328494121461",
+        appId: "1:328494121461:web:64da41ef1c82889ae5e0bc"
+    };
+
+    let db;
+    try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+    } catch (error) { console.error("Firebase Init Error:", error); }
+
+    const Icon = ({ d, size = 20, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d={d} /></svg>;
+    const Icons = {
+        Dashboard: () => <Icon d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />,
+        Improvement: () => <Icon d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-8a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />,
+        Operational: () => <Icon d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-3 9h.01" />,
+        Health: () => <Icon d="M22 12h-4l-3 9L9 3l-3 9H2" />,
+        Printer: () => <Icon d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />,
+        Upload: () => <Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />,
+        Menu: () => <Icon d="M3 12h18M3 6h18M3 18h18" />,
+        Settings: () => <Icon d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.35a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />,
+        Edit: () => <Icon d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />,
+        Trash: () => <Icon d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />,
+        Plus: () => <Icon d="M12 5v14M5 12h14" />,
+        Save: () => <Icon d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />,
+        CheckCircle: () => <Icon d="M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3" />,
+        Target: () => <Icon d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-8a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />,
+        Moon: () => <Icon d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
+        Sun: () => <Icon d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />,
+        FileText: () => <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" />,
+        Link: () => <Icon d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />,
+        X: () => <Icon d="M18 6L6 18M6 6l12 12" />,
+        Down: () => <Icon d="M6 9l6 6 6-6" />,
+        Up: () => <Icon d="M18 15l-6-6-6 6" />,
+        Users: () => <Icon d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 3a4 4 0 0 1 4 4v2 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75" />,
+        Hospital: () => <Icon d="M22 12h-4l-3 9L9 3l-3 9H2" />,
+        Scale: () => <Icon d="M12 3v19M5 8h14M5 12h14M5 16h14" />,
+        Alert: () => <Icon d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4m0 4h.01" />,
+        Whatsapp: () => <Icon d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />,
+        Lightbulb: () => <Icon d="M9 21h6v-1a6 6 0 0 0-12 0v1h6zm3-19a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
+    };
+
+    const INITIAL_MODULES = [
+        { id: 'health_guide_plan', name: 'خطة الموجه الصحي', icon: 'FileText' },
+        { id: 'gifted_plan', name: 'خطة الموهوبين', icon: 'Lightbulb' },
+        { id: 'improvement', name: 'خطة التحسين في مجالات الممارسات الإشرافية', icon: 'Improvement' },
+        { id: 'operational', name: 'الخطة التشغيلية', icon: 'Operational' },
+        { id: 'health_record_final_v7', name: 'سجل العيادة', icon: 'Health' },
+        { id: 'students_db', name: 'قاعدة بيانات الطلاب', icon: 'Users' },
+        { id: 'sites_links', name: 'مواقع وروابط', icon: 'Link' }
+    ];
+
+    const GIFTED_PLAN_DATA = [
+        {
+            id: 1,
+            domain: "التأسيس والتنظيم",
+            element: "تهيئة البيئة وتشكيل اللجان",
+            progress: 0,
+            procedures: [
+                { id: 101, text: "الاطلاع على اللوائح والتعاميم المتعلقة برعاية الموهوبين", responsible: "منسق الموهوبين", deadline: "-", status: "pending", witnessLink: "" },
+                { id: 102, text: "الاطلاع على سجل معلم الموهوبين وتنظيم الملفات", responsible: "منسق الموهوبين", deadline: "-", status: "pending", witnessLink: "" },
+                { id: 103, text: "تشكيل لجنة رعاية الموهوبين وتوضيح المهام", responsible: "مدير المدرسة", deadline: "-", status: "pending", witnessLink: "" },
+                { id: 104, text: "حضور البرامج التدريبية الخاصة بمعلم الموهوبين", responsible: "منسق الموهوبين", deadline: "-", status: "pending", witnessLink: "" }
+            ]
+        }
+    ];
+
+    const DEFAULT_PLAN_LABELS = {
+        domain: 'المجال',
+        element: 'الهدف / العنصر',
+        procedure: 'الإجراء',
+        responsible: 'المسؤول',
+        deadline: 'الموعد',
+        witness: 'الشاهد / الدليل'
+    };
+
+    const ConnectionStatus = () => {
+        const [online, setOnline] = useState(navigator.onLine);
+        useEffect(() => {
+            const setStatus = () => setOnline(navigator.onLine);
+            window.addEventListener('online', setStatus);
+            window.addEventListener('offline', setStatus);
+            return () => {
+                window.removeEventListener('online', setStatus);
+                window.removeEventListener('offline', setStatus);
+            };
+        }, []);
+
+        return (
+            <div className={`fixed bottom-3 left-3 z-[100] px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 text-xs font-bold transition-colors no-print ${online ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                <div className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+                {online ? 'متصل بالسحابة' : 'غير متصل'}
+            </div>
+        );
+    };
+
+    const ChartsSection = ({ plans, isPrintMode = false }) => {
+        const canvasRef = useRef(null);
+        useEffect(() => {
+            if (!plans || plans.length === 0) return;
+            let completed = 0, inProgress = 0, pending = 0;
+            plans.forEach(p => p.procedures?.forEach(pr => {
+                if(pr.status === 'completed') completed++;
+                else if(pr.status === 'in_progress') inProgress++;
+                else pending++;
+            }));
+            if(canvasRef.current) {
+                if(window.myChart) window.myChart.destroy();
+                const ctx = canvasRef.current.getContext('2d');
+                const existingChart = Chart.getChart(canvasRef.current);
+                if (existingChart) existingChart.destroy();
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['منجز', 'جاري', 'لم يبدأ'],
+                        datasets: [{ data: [completed, inProgress, pending], backgroundColor: ['#10b981', '#3b82f6', '#f43f5e'], borderWidth: 0 }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: { 
+                                position: isPrintMode ? 'bottom' : 'right', 
+                                labels: { font: { family: 'Tajawal', size: isPrintMode ? 10 : 12 } } 
+                            } 
+                        } 
+                    }
+                });
+            }
+        }, [plans, isPrintMode]);
+        
+        return (
+            <div className={`bg-white dark:bg-dark-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-dark-700 flex items-center justify-center chart-container ${isPrintMode ? 'h-full w-full border-none shadow-none p-0' : 'h-40'}`}>
+                <div className="w-full h-full relative">
+                    <canvas ref={canvasRef}></canvas>
+                </div>
+            </div>
+        );
+    };
+
+    const Toast = ({ message, type }) => (
+        <div className={`fixed bottom-6 left-6 z-[2000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all transform no-print fade-in ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
+            {type === 'success' ? <Icons.CheckCircle size={24} /> : <Icons.X size={24} />}
+            <span className="font-bold text-sm">{message}</span>
+        </div>
+    );
+
+    const EditableText = ({ value, onChange, placeholder, type="text", className="" }) => {
+        const [isEditing, setIsEditing] = useState(false);
+        const [val, setVal] = useState(value);
+        useEffect(() => setVal(value), [value]);
+        const handleBlur = () => { if(val !== value) onChange(val); setIsEditing(false); };
+        
+        const handleClick = (e) => {
+            e.stopPropagation();
+            setIsEditing(true);
+        };
+
+        if(isEditing) return <input autoFocus type={type} className={`w-full bg-white dark:bg-dark-800 border rounded p-1 outline-none ${className ? className : 'text-xs'}`} value={val} onChange={e => setVal(e.target.value)} onBlur={handleBlur} onKeyDown={e => { if(e.key === 'Enter') handleBlur(); }} onClick={e=>e.stopPropagation()} />;
+        return <div onClick={handleClick} className={`cursor-text hover:bg-gray-100 dark:hover:bg-dark-700 rounded px-1 transition-colors ${className ? className : 'min-h-[20px]'}`}>{val || <span className="text-gray-400 italic">{placeholder}</span>}</div>;
+    };
+
+    const WitnessCell = ({ link, onChange }) => {
+        const [isEditing, setIsEditing] = useState(false);
+        const [val, setVal] = useState(link || '');
+        const [qrImage, setQrImage] = useState(null);
+        useEffect(() => setVal(link || ''), [link]);
+        useEffect(() => { if (val && window.QRious) { try { const qr = new window.QRious({ value: val, size: 150, level: 'H' }); setQrImage(qr.toDataURL()); } catch (e) { setQrImage(null); } } else { setQrImage(null); } }, [val]);
+        const handleBlur = () => { if(val !== link) onChange(val); setIsEditing(false); };
+        return (
+            <div className="flex flex-col items-center justify-center w-full h-full">
+                {isEditing ? ( <input autoFocus className="w-full bg-white border rounded p-1 text-[10px] outline-none text-left dir-ltr" placeholder="https://..." value={val} onChange={e => setVal(e.target.value)} onBlur={handleBlur} onKeyDown={e => { if(e.key === 'Enter') handleBlur(); }} /> ) : (
+                    <>
+                        <div className="no-print flex items-center gap-2 cursor-pointer">
+                            {val ? ( 
+                                <>
+                                    <a href={val} target="_blank" onClick={e => e.stopPropagation()} className="text-blue-600 hover:underline text-xs flex items-center gap-1 font-bold"><Icons.Link size={14}/> فتح</a>
+                                    <button onClick={() => setIsEditing(true)} className="text-slate-400 hover:text-slate-600" title="تعديل الرابط"><Icons.Edit size={14}/></button>
+                                </>
+                            ) : ( <span className="text-gray-400 text-[10px]" onClick={() => setIsEditing(true)}>أضف رابط</span> )}
+                        </div>
+                        <div className="show-in-print text-center">{qrImage ? ( <div className="flex flex-col items-center"><img src={qrImage} className="qr-image-print" alt="QR" /><a href={val} target="_blank" className="print-link-blue">الرابط</a></div> ) : ( <span className="text-[10px] text-gray-400">-</span> )}</div>
+                    </>
+                )}
+            </div>
+        );
+    };
+
+    const Badge = ({ status, onClick }) => {
+        const styles = { completed: "bg-emerald-100 text-emerald-700 border-emerald-200", in_progress: "bg-blue-100 text-blue-700 border-blue-200", pending: "bg-red-100 text-red-700 border-red-200" };
+        const labels = { completed: "مكتمل", in_progress: "جاري", pending: "لم يبدأ" };
+        return (
+            <span onClick={onClick} className={`cursor-pointer text-[10px] px-2 py-1 rounded-full font-bold border select-none ${styles[status]}`}>
+                {labels[status]}
+            </span>
+        );
+    };
+
+    const ImageUploader = ({ label, onImageUpload, currentImage }) => {
+        const ref = useRef(null);
+        return (
+            <div className="flex flex-col items-center gap-2 p-4 bg-slate-50 dark:bg-dark-800 rounded-xl border-2 border-slate-200 dark:border-dark-700 border-dashed hover:border-emerald-500 cursor-pointer group" onClick={() => ref.current.click()}>
+                <input type="file" ref={ref} onChange={e => { if(e.target.files[0]) { const r = new FileReader(); r.onloadend = () => onImageUpload(r.result); r.readAsDataURL(e.target.files[0]); } }} accept="image/*" className="hidden" />
+                {currentImage ? <img src={currentImage} className="h-20 w-20 object-contain" /> : <div className="h-20 w-20 bg-white dark:bg-dark-700 rounded-full flex items-center justify-center text-slate-300"><Icons.Upload size={28} /></div>}
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{label}</span>
+            </div>
+        );
+    };
+
+    const PlanModal = ({ isOpen, onClose, onSave, labels }) => {
+        const [f, setF] = useState({ domain: '', element: '', need: '' });
+        if (!isOpen) return null;
+        return (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 no-print">
+                <div className="bg-white dark:bg-dark-800 rounded-3xl w-full max-w-md p-8 shadow-2xl fade-in">
+                    <h3 className="text-xl font-bold mb-4 dark:text-white">إضافة هدف جديد</h3>
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-500">{labels.domain}</label>
+                            <input className="w-full p-3 bg-gray-50 dark:bg-dark-900 rounded border dark:border-dark-700 outline-none dark:text-white" placeholder={labels.domain} value={f.domain} onChange={e => setF({...f, domain: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-500">{labels.element}</label>
+                            <input className="w-full p-3 bg-gray-50 dark:bg-dark-900 rounded border dark:border-dark-700 outline-none dark:text-white" placeholder={labels.element} value={f.element} onChange={e => setF({...f, element: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-500">الوصف</label>
+                            <textarea className="w-full p-3 bg-gray-50 dark:bg-dark-900 rounded border dark:border-dark-700 outline-none dark:text-white h-24" placeholder="الوصف" value={f.need} onChange={e => setF({...f, need: e.target.value})}></textarea>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                        <button onClick={() => onSave(f)} className="flex-1 bg-emerald-600 text-white py-2 rounded font-bold">حفظ</button>
+                        <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded font-bold">إلغاء</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const BMICalculator = ({ isOpen, onClose }) => {
+        const [w, setW] = useState('');
+        const [h, setH] = useState('');
+        const [res, setRes] = useState(null);
+        if(!isOpen) return null;
+        const calc = () => {
+            if(!w || !h) return;
+            const hm = h / 100;
+            const bmi = (w / (hm * hm)).toFixed(1);
+            let status = '';
+            if(bmi < 18.5) status = 'نحافة';
+            else if(bmi < 25) status = 'وزن طبيعي';
+            else if(bmi < 30) status = 'زيادة وزن';
+            else status = 'سمنة';
+            setRes({bmi, status});
+        };
+        return (
+            <div className="fixed inset-0 bg-black/60 z-[3000] flex items-center justify-center p-4 backdrop-blur-sm no-print" onClick={onClose}>
+                <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}>
+                    <h3 className="text-xl font-bold mb-4 dark:text-white flex items-center gap-2"><Icons.Scale /> حاسبة كتلة الجسم</h3>
+                    <div className="space-y-3">
+                        <input type="number" className="w-full p-2 border rounded dark:bg-dark-900 dark:text-white" placeholder="الوزن (كجم)" value={w} onChange={e=>setW(e.target.value)} />
+                        <input type="number" className="w-full p-2 border rounded dark:bg-dark-900 dark:text-white" placeholder="الطول (سم)" value={h} onChange={e=>setH(e.target.value)} />
+                        <button onClick={calc} className="w-full bg-emerald-600 text-white py-2 rounded font-bold">احسب</button>
+                    </div>
+                    {res && ( <div className="mt-4 text-center p-3 bg-slate-50 dark:bg-dark-900 rounded-lg"><div className="text-3xl font-black text-emerald-600">{res.bmi}</div><div className="font-bold text-slate-600 dark:text-slate-300">{res.status}</div></div> )}
+                </div>
+            </div>
+        );
+    };
+
+    const CoverPage = ({ moduleName, icon: IconComp, preparer, principal, logos }) => {
+        return (
+            <div className="cover-page font-sans text-slate-900">
+                <svg className="wave-bg-top" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#059669" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
+                </svg>
+
+                <div className="cover-content">
+                    <div className="text-center space-y-3 mt-8 z-20 relative w-full">
+                        <h2 className="text-xl font-bold">المملكة العربية السعودية</h2>
+                        <h2 className="text-xl font-bold">وزارة التعليم</h2>
+                        <h2 className="text-lg font-bold">الإدارة العامة للتعليم بمنطقة عسير</h2>
+                        <h2 className="text-lg font-bold">ابتدائية ومتوسطة الراشدون بالمربع</h2>
+                        
+                        <div className="flex justify-between items-center w-full max-w-2xl mx-auto mt-8 px-12">
+                            {logos.ministry ? <img src={logos.ministry} className="h-28 object-contain" alt="Ministry" /> : <div></div>}
+                            {logos.vision ? <img src={logos.vision} className="h-24 object-contain" alt="Vision 2030" /> : <div></div>}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center p-12 border-4 border-double border-slate-800 rounded-3xl mx-auto w-3/4 bg-white/60 backdrop-blur-sm shadow-sm z-20 relative">
+                        <h1 className="text-5xl font-black text-slate-800 text-center leading-tight mb-4">{moduleName}</h1>
+                        <p className="text-2xl text-slate-500 font-bold mt-2">للعام الدراسي 1447 هـ</p>
+                    </div>
+
+                    <div className="flex justify-between items-end px-20 mb-12 w-full z-20 relative">
+                        <div className="text-center">
+                            <p className="font-bold text-xl mb-4 text-slate-600">{preparer.title}</p>
+                            <p className="font-black text-2xl">{preparer.name}</p>
+                        </div>
+
+                        <div className="text-center">
+                            <p className="font-bold text-xl mb-4 text-slate-600">مدير المدرسة</p>
+                            <p className="font-black text-2xl">{principal}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <svg className="wave-bg-bottom" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#059669" fillOpacity="1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,202.7C1248,181,1344,171,1392,165.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                </svg>
+            </div>
+        );
+    };
+
+    /* --- نموذج الإحالة (المحدث حسب الطلب) --- */
+    const ReferralForm = ({ data, logos, destination }) => {
+        if (!data) return null;
+
+        const nameParts = data.name ? data.name.trim().split(/\s+/) : [];
+        const firstName = nameParts[0] || '';
+        const fatherName = nameParts[1] || '';
+        const grandName = nameParts[2] || '';
+        const familyName = nameParts.length > 3 ? nameParts.slice(3).join(' ') : (nameParts[3] || '');
+
+        const getHijriDateEnglish = () => {
+            return new Intl.DateTimeFormat('en-GB-u-ca-islamic-umalqura', {
+                day: 'numeric', month: 'numeric', year: 'numeric'
+            }).format(new Date());
+        };
+        // إزالة AH من التاريخ
+        const dateStringEng = getHijriDateEnglish().replace('AH', '').trim();
+
+        const getHijriDateArabic = () => {
+            return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
+                day: '2-digit', month: '2-digit', year: 'numeric'
+            }).format(new Date());
+        };
+        const dateStringAr = getHijriDateArabic();
+
+        const now = new Date();
+        const hours = now.getHours();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        let hours12 = hours % 12;
+        hours12 = hours12 ? hours12 : 12;
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const timeString = `${hours12}:${minutes}`;
+        const dateEng = now.toLocaleDateString('en-GB');
+        const watermarkText = `${ampm} ${timeString} ${dateEng} علي بن عسيري`;
+
+        const destinationLabel = destination && destination.includes('مستشفى') ? 'المستشفى' : 'المركز الصحي';
+
+        return (
+            <div className="referral-print-area text-black relative">
+                
+                <div className="watermark-grid">
+                    {[...Array(15)].map((_, i) => (
+                        <div key={i} className="watermark-item">{watermarkText}</div>
+                    ))}
+                </div>
+
+                <div className="referral-content">
+                    <div className="header-grid text-center">
+                        <div className="text-center w-1/3 leading-relaxed">
+                            <p>المملكة العربية السعودية</p>
+                            <p>وزارة التعليم</p>
+                            <p>الإدارة العامة للتعليم بمنطقة عسير</p>
+                            <p>ابتدائية ومتوسطة الراشدون بالمربع</p>
+                        </div>
+                        
+                        <div className="w-1/3 flex justify-center items-start pt-2">
+                            {logos.ministry && <img src={logos.ministry} className="h-24 object-contain" alt="Ministry Logo" />}
+                        </div>
+
+                        <div className="text-right w-1/3 text-sm font-bold" dir="rtl">
+                            <div className="grid grid-cols-[80px_20px_1fr] gap-y-1 items-start">
+                                <div>الرقم</div>
+                                <div className="text-center">:</div>
+                                <div></div>
+
+                                <div>التاريخ</div>
+                                <div className="text-center">:</div>
+                                <div>{dateStringAr}</div>
+
+                                <div>المرفقات</div>
+                                <div className="text-center">:</div>
+                                <div></div>
+
+                                <div>{destinationLabel}</div>
+                                <div className="text-center">:</div>
+                                <div>{destination || 'مركز صحي ترقش'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="text-center mt-6 mb-2">
+                        <h1 className="text-2xl font-bold">تحويل طالب الى {destinationLabel}</h1>
+                        <div className="double-line-header"></div>
+                    </div>
+
+                    <table className="official-table">
+                        <thead>
+                            <tr>
+                                <th>السجل المدني</th>
+                                <th>الاسم الأول</th>
+                                <th>اسم الأب</th>
+                                <th>اسم الجد</th>
+                                <th>اسم العائلة</th>
+                                <th>الجنسية</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{data.nationalId || '..........'}</td>
+                                <td>{firstName}</td>
+                                <td>{fatherName}</td>
+                                <td>{grandName}</td>
+                                <td>{familyName}</td>
+                                <td>{data.nationality || 'السعودية'}</td>
+                            </tr>
+                            <tr>
+                                <td colSpan="3" className="text-right-cell">الصف : {data.grade}</td>
+                                <td colSpan="3" className="text-right-cell">عنوان السكن : {data.address || 'عسير - تهامة - المربع'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div className="px-4 text-right text-lg font-bold leading-normal mt-6" dir="rtl">
+                        <div className="flex justify-between items-center mb-4">
+                            <span>المكرم مدير {destination || 'مركز صحي ترقش'}</span>
+                            <span className="pl-12">المحترم</span>
+                        </div>
+                        
+                        <p className="text-center mb-4">السلام عليكم ورحمة الله وبركاته .. وبعد</p>
+                        
+                        <p className="text-justify indent-8 mb-4">
+                            نحيل إليكم الطالب الموضحة بياناته أعلاه ... نأمل منكم إجراء الكشف الطبي عليه وموافاتنا بنتيجة الكشف ... ولكم تحياتي
+                        </p>
+                    </div>
+
+                    <div className="flex justify-between items-start mt-4 px-8">
+                        <div className="text-center">
+                            <p className="mb-2">الختم الرسمي</p>
+                            {logos.seal && <img src={logos.seal} className="w-20 h-20 object-contain opacity-80 mx-auto" alt="Seal" />}
+                        </div>
+                        <div className="text-center">
+                            <p className="mb-4">مدير المدرسة</p>
+                            <p className="text-xl">احمد بن سالم بن علي الشهري</p>
+                        </div>
+                    </div>
+
+                    <div className="double-line-divider"></div>
+
+                    <div className="text-center mb-4">
+                        <h2 className="text-xl font-bold underline inline-block">تقرير {destinationLabel}</h2>
+                    </div>
+
+                    <div className="px-4 text-right text-lg font-bold leading-normal" dir="rtl">
+                        <div className="flex justify-between items-center mb-4">
+                            <span>المكرم مدير المدرسة : احمد بن سالم بن علي العلاجي الشهري</span>
+                            <span className="pl-12">المحترم</span>
+                        </div>
+
+                        <p className="text-center mb-2">السلام عليكم ورحمة الله وبركاته .. وبعد</p>
+
+                        <p className="mb-3 font-bold">بإجراء الكشف الطبي على الطالب المذكور بياناته أعلاه ... اتضح أنه يعاني من :</p>
+                        
+                        <div className="space-y-3 mb-4 pr-2 text-base">
+                             <div className="w-full border-b-2 border-black border-dotted h-6"></div>
+                             <div className="w-full border-b-2 border-black border-dotted h-6"></div>
+                             <div className="w-full border-b-2 border-black border-dotted h-6"></div>
+                        </div>
+
+                        <p className="mb-2 text-lg font-bold leading-loose">
+                            ولقد أعطيت له راحة لمدة .................... تبدأ من يوم .................... الموافق&nbsp;
+                            <span className="inline-block w-10 text-center"></span> /&nbsp;
+                            <span className="inline-block w-10 text-center"></span> /&nbsp;
+                            <span className="inline-block w-10 text-center"></span>
+                            14 هـ
+                        </p>
+                    </div>
+
+                    <div className="flex justify-between items-end mt-4 px-4 text-center font-bold">
+                        <div className="w-1/3">
+                            <p className="mb-2">مدير {destination?.includes('مستشفى') ? 'المستشفى' : 'المركز صحي'}</p>
+                            <div className="border-b border-black w-3/4 mx-auto"></div>
+                        </div>
+                        <div className="w-1/3">
+                            <p className="mb-2">الختم</p>
+                            <div className="w-16 h-16 mx-auto"></div>
+                        </div>
+                        <div className="w-1/3">
+                            <p className="mb-2">الطبيب المعالج</p>
+                            <div className="border-b border-black w-3/4 mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="page-footer-container">
+                    <span className="left-content font-sans">{dateStringEng}</span>
+                    <span className="center-content">1/1</span>
+                </div>
+            </div>
+        );
+    };
+
+    const SitesLinksView = ({ data, onSave }) => {
+        const addSection = () => { const title = prompt("أدخل عنوان القسم الجديد:"); if (title) onSave([...data, { id: Date.now(), title, links: [] }]); };
+        const deleteSection = (id) => { if (confirm("هل أنت متأكد من حذف هذا القسم؟")) onSave(data.filter(s => s.id !== id)); };
+        const addLink = (sectionId) => {
+            const name = prompt("اسم الموقع:"); if (!name) return;
+            const url = prompt("الرابط (URL):", "https://"); if (!url) return;
+            onSave(data.map(s => s.id === sectionId ? { ...s, links: [...s.links, { id: Date.now(), name, url }] } : s));
+        };
+        const deleteLink = (sectionId, linkId) => { if (!confirm("حذف الرابط؟")) return; onSave(data.map(s => s.id === sectionId ? { ...s, links: s.links.filter(l => l.id !== linkId) } : s)); };
+
+        return (
+            <div className="space-y-6 fade-in">
+                <div className="flex justify-between items-center bg-white dark:bg-dark-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-dark-700 no-print">
+                    <h3 className="font-bold dark:text-white flex items-center gap-2"><Icons.Link /> مكتبة الروابط والمواقع</h3>
+                    <button onClick={addSection} className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2"><Icons.Plus size={18} /> إضافة قسم</button>
+                </div>
+                {data.length === 0 && <div className="text-center py-12 text-slate-400">لا توجد أقسام حالياً.</div>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {data.map(section => (
+                        <div key={section.id} className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-slate-200 dark:border-dark-700 overflow-hidden flex flex-col">
+                            <div className="p-4 bg-slate-50 dark:bg-dark-900 border-b border-slate-100 dark:border-dark-700 flex justify-between items-center">
+                                <h4 className="font-bold text-lg text-slate-800 dark:text-white">{section.title}</h4>
+                                <button onClick={() => deleteSection(section.id)} className="text-slate-400 hover:text-red-500 no-print"><Icons.Trash size={18} /></button>
+                            </div>
+                            <div className="p-4 flex-1 space-y-3">
+                                {section.links.map(link => (
+                                    <div key={link.id} className="flex items-center justify-between group p-2 hover:bg-slate-50 dark:hover:bg-dark-700 rounded-lg transition-colors">
+                                        <a href={link.url} target="_blank" className="flex items-center gap-3 text-blue-600 dark:text-blue-400 font-bold hover:underline truncate">
+                                            <span className="bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-full"><Icons.Link size={14}/></span>{link.name}
+                                        </a>
+                                        <button onClick={() => deleteLink(section.id, link.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity no-print"><Icons.X size={16} /></button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="p-3 bg-slate-50 dark:bg-dark-900/50 border-t border-slate-100 dark:border-dark-700 no-print">
+                                <button onClick={() => addLink(section.id)} className="w-full py-2 rounded border border-dashed border-slate-300 text-slate-500 hover:border-emerald-500 hover:text-emerald-600 text-sm font-bold flex items-center justify-center gap-2"><Icons.Plus size={16} /> إضافة رابط</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const StudentsDB = ({ students, onSaveStudents, showToast }) => {
+        const fileRef = useRef(null);
+        const [searchTerm, setSearchTerm] = useState('');
+
+        const handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, {type:'binary'});
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws, {header: 1});
+                
+                const newStudents = data.slice(1).map((row, idx) => ({
+                    id: Date.now() + idx,
+                    name: row[0] || '',        
+                    grade: row[1] || '',       
+                    phone: row[2] || '',       
+                    nationalId: row[3] || '', 
+                    nationality: row[4] || '',
+                    address: row[5] || ''      
+                })).filter(s => s.name);
+
+                if(newStudents.length > 0) {
+                    if (confirm(`تم العثور على ${newStudents.length} طالب.\n\n[موافق] = استبدال\n[إلغاء] = دمج`)) {
+                        onSaveStudents(newStudents);
+                    } else {
+                        onSaveStudents([...students, ...newStudents]);
+                    }
+                    showToast('تم استيراد الطلاب بنجاح', 'success');
+                }
+            };
+            reader.readAsBinaryString(file);
+        };
+
+        const exportDB = async () => {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('الطلاب', { views: [{ rightToLeft: true }] });
+            sheet.columns = [ 
+                { header: 'الاسم', key: 'n', width: 30 }, 
+                { header: 'الصف', key: 'g', width: 10 }, 
+                { header: 'الجوال', key: 'p', width: 15 }, 
+                { header: 'السجل', key: 'id', width: 15 },
+                { header: 'الجنسية', key: 'nat', width: 15 },
+                { header: 'العنوان', key: 'addr', width: 30 }
+            ];
+            students.forEach(s => sheet.addRow({ n: s.name, g: s.grade, p: s.phone, id: s.nationalId, nat: s.nationality, addr: s.address }));
+            const buf = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([buf]), `قاعدة_الطلاب.xlsx`);
+        };
+
+        const filtered = students.filter(s => s.name.includes(searchTerm));
+
+        return (
+            <div className="space-y-6 fade-in no-print">
+                <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-dark-700">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                        <h3 className="font-bold text-lg dark:text-white flex items-center gap-2"><Icons.Users /> قاعدة بيانات الطلاب</h3>
+                        <div className="flex gap-2">
+                             <button onClick={exportDB} className="bg-slate-500 text-white px-3 py-2 rounded-lg font-bold hover:bg-slate-600 flex items-center gap-2 text-sm"><Icons.FileText size={16} /> تحميل نسخة</button>
+                             <button onClick={() => fileRef.current.click()} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2">
+                                <Icons.Upload size={18} /> استيراد / استبدال
+                            </button>
+                        </div>
+                        <input type="file" ref={fileRef} onChange={handleFileUpload} className="hidden" accept=".xlsx, .xls" />
+                    </div>
+                    <p className="text-sm text-red-500 mb-2 font-bold">ترتيب ملف الإكسل: الاسم (A)، الصف (B)، الجوال (C)، السجل (D)، الجنسية (E)، العنوان (F).</p>
+                    <input type="text" placeholder="بحث عن طالب..." className="w-full p-2 border rounded mb-4 dark:bg-dark-900 dark:text-white" value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+
+                    <div className="overflow-x-auto max-h-96">
+                        <table className="w-full text-right text-sm print-borders">
+                            <thead className="bg-gray-100 dark:bg-dark-900 font-bold sticky top-0">
+                                <tr>
+                                    <th className="p-3">الاسم</th><th className="p-3">الصف</th><th className="p-3">رقم الجوال</th><th className="p-3">السجل المدني</th><th className="p-3">تحكم</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-dark-700">
+                                {filtered.map(s => (
+                                    <tr key={s.id}>
+                                        <td className="p-2 dark:text-white font-bold">{s.name}</td>
+                                        <td className="p-2 dark:text-gray-300">{s.grade}</td>
+                                        <td className="p-2 dark:text-gray-300">{s.phone}</td>
+                                        <td className="p-2 dark:text-gray-300">{s.nationalId || '-'}</td>
+                                        <td className="p-2"><button onClick={() => { if(confirm('حذف؟')) onSaveStudents(students.filter(x=>x.id !== s.id)); }} className="text-red-500"><Icons.Trash size={16}/></button></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const HealthClinicView = ({ records, studentsDB, onSaveRecord, onUpdateRecord, onDeleteRecord, onOpenReferral, onOpenBMI, showToast }) => {
+        const [newRec, setNewRec] = useState({ date: '', time: '', name: '', grade: '', diagnosis: '', action: '', phone: '' });
+        const [searchTerm, setSearchTerm] = useState('');
+        const [selectedStudent, setSelectedStudent] = useState(null);
+        
+        useEffect(() => {
+            const now = new Date();
+            setNewRec(prev => ({ 
+                ...prev, 
+                date: now.toISOString().split('T')[0], 
+                time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) 
+            }));
+        }, [records]);
+
+        const handleNameChange = (e) => {
+            const val = e.target.value;
+            const found = studentsDB.find(s => s.name && s.name.trim() === val.trim());
+            if(found) {
+                let g = found.grade ? String(found.grade).trim() : '';
+                let p = found.phone ? String(found.phone).trim() : '';
+                if (g.length > 5 && (g.startsWith('966') || g.startsWith('05'))) {
+                    const temp = g; g = p; p = temp;
+                }
+                setNewRec(prev => ({...prev, name: found.name, grade: g, phone: p}));
+            } else {
+                setNewRec(prev => ({...prev, name: val}));
+            }
+        };
+
+        const handleSave = () => {
+            if(!newRec.name) return showToast("الاسم مطلوب", "error");
+            const now = new Date();
+            onSaveRecord({ 
+                ...newRec, 
+                date: newRec.date || now.toISOString().split('T')[0], 
+                time: newRec.time || now.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}), 
+                id: Date.now() 
+            });
+            showToast("تم تسجيل الحالة بنجاح", "success");
+            setNewRec({ 
+                date: now.toISOString().split('T')[0], 
+                time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), 
+                name: '', 
+                grade: '', 
+                diagnosis: '', 
+                action: '', 
+                phone: '' 
+            });
+        };
+
+        const exportExcel = async () => {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('سجل العيادة', { views: [{ rightToLeft: true }] });
+            sheet.columns = [ { header: 'التاريخ', key: 'd', width: 12 }, { header: 'الوقت', key: 't', width: 10 }, { header: 'الاسم', key: 'n', width: 30 }, { header: 'الصف', key: 'g', width: 10 }, { header: 'التشخيص', key: 'diag', width: 30 }, { header: 'الإجراء', key: 'act', width: 30 }, { header: 'الجوال', key: 'p', width: 15 } ];
+            sheet.getRow(1).eachCell(cell => { cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF10B981'}}; cell.font={color:{argb:'FFFFFFFF'},bold:true}; cell.alignment={horizontal:'center'}; });
+            records.forEach(r => sheet.addRow({ d: r.date, t: r.time, n: r.name, g: r.grade, diag: r.diagnosis, act: r.action, p: r.phone }));
+            const buf = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([buf]), `سجل_العيادة.xlsx`);
+        };
+
+        const filtered = records.filter(r => r.name.includes(searchTerm));
+
+        return (
+            <div className="space-y-6 fade-in">
+                <div className="bg-white dark:bg-dark-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-dark-700 no-print">
+                    <div className="grid grid-cols-2 md:grid-cols-8 gap-3">
+                        <input type="date" className="p-2 border rounded dark:bg-dark-900 dark:text-white" value={newRec.date} onChange={e=>setNewRec({...newRec, date: e.target.value})} />
+                        <input type="time" className="p-2 border rounded dark:bg-dark-900 dark:text-white" value={newRec.time} onChange={e=>setNewRec({...newRec, time: e.target.value})} />
+                        
+                        <div className="col-span-2">
+                            <input list="students_list" type="text" className="p-2 border rounded w-full dark:bg-dark-900 dark:text-white" placeholder="اسم الطالب" value={newRec.name} onChange={handleNameChange} />
+                            <datalist id="students_list">{studentsDB.map(s=><option key={s.id} value={s.name} />)}</datalist>
+                        </div>
+
+                        <input type="text" className="p-2 border rounded dark:bg-dark-900 dark:text-white" placeholder="رقم ولي الأمر" value={newRec.phone} onChange={e=>setNewRec({...newRec, phone: e.target.value})} />
+                        <input type="text" className="p-2 border rounded dark:bg-dark-900 dark:text-white" placeholder="التشخيص" value={newRec.diagnosis} onChange={e=>setNewRec({...newRec, diagnosis: e.target.value})} />
+                        <input type="text" className="p-2 border rounded w-full dark:bg-dark-900 dark:text-white" placeholder="الإجراء" value={newRec.action} onChange={e=>setNewRec({...newRec, action: e.target.value})} />
+                        
+                        <div className="flex gap-1">
+                            <button onClick={handleSave} className="bg-emerald-600 text-white p-2 rounded"><Icons.Plus /></button>
+                            <input type="text" className="p-2 border rounded w-full dark:bg-dark-900 dark:text-white text-center" placeholder="الصف" value={newRec.grade} onChange={e=>setNewRec({...newRec, grade: e.target.value})} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-between gap-2 no-print">
+                    <div className="relative flex-1">
+                        <input type="text" placeholder="بحث..." className="w-full p-2 border rounded dark:bg-dark-900 dark:text-white" value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+                    </div>
+                    <button onClick={exportExcel} className="bg-green-600 text-white px-3 py-2 rounded text-sm font-bold flex gap-1 items-center"><Icons.FileText size={16}/> Excel</button>
+                    <button onClick={onOpenBMI} className="bg-blue-600 text-white px-3 py-2 rounded text-sm font-bold flex gap-1 items-center"><Icons.Scale size={16}/> BMI</button>
+                </div>
+
+                <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm overflow-x-auto">
+                    <table className="w-full text-right text-sm print-borders">
+                        <thead className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-100 font-bold">
+                            <tr><th>التاريخ</th><th>الوقت</th><th>الاسم</th><th>الصف</th><th>التشخيص</th><th>الإجراء</th><th>جوال ولي الأمر</th><th className="no-print">أدوات</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
+                            {filtered.map(r => {
+                                const phoneStr = r.phone ? String(r.phone).trim() : '';
+                                let waNumber = phoneStr;
+                                if (waNumber.startsWith('966')) waNumber = waNumber.substring(3);
+                                if (waNumber.startsWith('0')) waNumber = waNumber.substring(1);
+
+                                return (
+                                <tr key={r.id}>
+                                    <td className="p-3 dark:text-gray-300 align-middle"><EditableText value={r.date} onChange={v=>onUpdateRecord(r.id, 'date', v)} type="date" /></td>
+                                    <td className="p-3 dark:text-gray-300 align-middle"><EditableText value={r.time} onChange={v=>onUpdateRecord(r.id, 'time', v)} type="time" /></td>
+                                    <td className="p-3 font-bold dark:text-white cursor-pointer hover:text-blue-500 align-middle" onClick={()=>setSelectedStudent(r.name)}>{r.name}</td>
+                                    <td className="p-3 align-middle"><EditableText value={r.grade} onChange={v=>onUpdateRecord(r.id, 'grade', v)} /></td>
+                                    <td className="p-3 text-red-600 align-middle"><EditableText value={r.diagnosis} onChange={v=>onUpdateRecord(r.id, 'diagnosis', v)} /></td>
+                                    <td className="p-3 text-emerald-700 align-middle"><EditableText value={r.action} onChange={v=>onUpdateRecord(r.id, 'action', v)} /></td>
+                                    <td className="p-3 font-bold text-gray-600 dark:text-gray-400 align-middle">
+                                        <div className="flex items-center gap-2 justify-center w-full h-full">
+                                            <div className="flex-1 text-center"><EditableText value={phoneStr} onChange={v=>onUpdateRecord(r.id, 'phone', v)} /></div>
+                                            {phoneStr && <a href={`https://wa.me/966${waNumber}`} target="_blank" className="text-green-500 hover:scale-110 transition-transform no-print" title="مراسلة واتساب"><Icons.Whatsapp size={18}/></a>}
+                                        </div>
+                                    </td>
+                                    <td className="p-3 flex gap-2 no-print align-middle">
+                                        <button onClick={()=>{
+                                            // طلب تحديد الوجهة قبل الطباعة
+                                            const isMuhayil = confirm("حدد وجهة التحويل:\n\n[موافق] = مستشفى محايل العام\n[إلغاء] = مركز صحي ترقش");
+                                            const dest = isMuhayil ? 'مستشفى محايل العام' : 'مركز صحي ترقش';
+
+                                            const studentInfo = studentsDB.find(s=>s.name===r.name);
+                                            onOpenReferral({
+                                                name: r.name, 
+                                                grade: r.grade, 
+                                                nationalId: studentInfo?.nationalId, 
+                                                nationality: studentInfo?.nationality,
+                                                address: studentInfo?.address,
+                                                destination: dest
+                                            });
+                                        }} className="text-blue-500 hover:bg-blue-50 p-1 rounded" title="طباعة إحالة"><Icons.Hospital size={18} /></button>
+                                        <button onClick={()=>onDeleteRecord(r.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Icons.Trash size={18} /></button>
+                                    </td>
+                                </tr>
+                            )})}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    };
+
+    const App = () => {
+        const [modules, setModules] = useState(INITIAL_MODULES);
+        const [activeModule, setActiveModule] = useState(INITIAL_MODULES[0].id);
+        const [darkMode, setDarkMode] = useState(false);
+        const [logos, setLogos] = useState({ vision: null, ministry: null, seal: null });
+        const [dataStore, setDataStore] = useState({});
+        const [bmiOpen, setBmiOpen] = useState(false);
+        const [referralData, setReferralData] = useState(null);
+        const [planModalOpen, setPlanModalOpen] = useState(false);
+        const [planLabels, setPlanLabels] = useState(DEFAULT_PLAN_LABELS);
+        const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+        const [toast, setToast] = useState(null);
+
+        const showToast = (message, type = 'success') => {
+            setToast({ message, type });
+            setTimeout(() => setToast(null), 3000);
+        };
+
+        useEffect(() => {
+            if (referralData) {
+                document.title = `إحالة طبية - ${referralData.name}`;
+            } else {
+                const currentModule = modules.find(m => m.id === activeModule);
+                if (currentModule) {
+                    document.title = `نظام الراشدون - ${currentModule.name}`;
+                }
+            }
+        }, [activeModule, modules, referralData]);
+
+        useEffect(() => {
+            if(darkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+            const unsubSettings = db.collection('school_data').doc('settings').onSnapshot(d => {
+                if(d.exists) {
+                    const data = d.data();
+                    setLogos(data);
+                    if(data.moduleNames) {
+                        setModules(prev => prev.map(m => ({
+                            ...m,
+                            name: data.moduleNames[m.id] || m.name
+                        })));
+                    }
+                    if(data.planLabels) {
+                        setPlanLabels(data.planLabels);
+                    }
+                }
+            });
+            
+            const unsubs = modules.map(m => db.collection('school_data').doc(m.id).onSnapshot(d => {
+                if(d.exists && d.data().data) {
+                    setDataStore(prev => ({ ...prev, [m.id]: d.data().data }));
+                } else if (m.id === 'gifted_plan') {
+                    setDataStore(prev => ({ ...prev, [m.id]: GIFTED_PLAN_DATA }));
+                    db.collection('school_data').doc('gifted_plan').set({ data: GIFTED_PLAN_DATA });
+                } else {
+                    setDataStore(prev => ({ ...prev, [m.id]: [] }));
+                }
+            }));
+            return () => { unsubSettings(); unsubs.forEach(u => u()); };
+        }, [darkMode]);
+
+        const saveData = (col, data) => db.collection('school_data').doc(col).set({ data });
+
+        const saveModuleTitles = () => {
+            const names = {};
+            modules.forEach(m => names[m.id] = m.name);
+            db.collection('school_data').doc('settings').set({ moduleNames: names, planLabels: planLabels }, { merge: true });
+            showToast('تم حفظ المسميات الجديدة بنجاح', 'success');
+        };
+
+        const clearClinicData = () => {
+            if(confirm('⚠️ تحذير: هل أنت متأكد من مسح جميع سجلات العيادة؟')) {
+                saveData('health_record_final_v7', []);
+                showToast('تم مسح السجلات بنجاح', 'success');
+            }
+        };
+
+        const clearStudentsData = () => {
+            if(confirm('⚠️ تحذير: هل أنت متأكد من مسح قاعدة بيانات الطلاب؟')) {
+                saveData('students_db', []);
+                showToast('تم مسح قاعدة الطلاب بنجاح', 'success');
+            }
+        };
+
+        const savePlan = (data) => {
+            const currentPlans = dataStore[activeModule] || [];
+            const updated = [...currentPlans, { id: Date.now(), ...data, procedures: [], progress: 0 }];
+            saveData(activeModule, updated);
+            setPlanModalOpen(false);
+            showToast('تم إضافة الهدف بنجاح', 'success');
+        };
+
+        const updatePlan = (id, field, val) => {
+            const updatedPlans = (dataStore[activeModule] || []).map(p =>
+                p.id === id ? { ...p, [field]: val } : p
+            );
+            saveData(activeModule, updatedPlans);
+        };
+
+        const updateProc = (pid, procId, field, val) => {
+            const updatedPlans = (dataStore[activeModule] || []).map(p => {
+                if (p.id !== pid) return p;
+                const updatedProcs = p.procedures.map(pr => pr.id === procId ? { ...pr, [field]: val } : pr);
+                const completed = updatedProcs.filter(x => x.status === 'completed').length;
+                const prog = updatedProcs.length > 0 ? Math.round((completed / updatedProcs.length) * 100) : 0;
+                return { ...p, procedures: updatedProcs, progress: prog };
+            });
+            saveData(activeModule, updatedPlans);
+        };
+
+        const updateClinicRecord = (id, field, val) => {
+             const updatedRecords = (dataStore['health_record_final_v7'] || []).map(r =>
+                 r.id === id ? { ...r, [field]: val } : r
+             );
+             saveData('health_record_final_v7', updatedRecords);
+        };
+
+        const toggleProcStatus = (pid, procId) => {
+            const updatedPlans = (dataStore[activeModule] || []).map(p => {
+                if (p.id !== pid) return p;
+                const updatedProcs = p.procedures.map(pr => {
+                    if (pr.id !== procId) return pr;
+                    const nextStatus = pr.status === 'pending' ? 'in_progress' : pr.status === 'in_progress' ? 'completed' : 'pending';
+                    return { ...pr, status: nextStatus };
+                });
+                const completed = updatedProcs.filter(x => x.status === 'completed').length;
+                const prog = updatedProcs.length > 0 ? Math.round((completed / updatedProcs.length) * 100) : 0;
+                return { ...p, procedures: updatedProcs, progress: prog };
+            });
+            saveData(activeModule, updatedPlans);
+        };
+
+        const deleteProc = (pid, procId) => {
+            if(!confirm("حذف الإجراء؟")) return;
+            const updatedPlans = (dataStore[activeModule] || []).map(p => {
+                if (p.id !== pid) return p;
+                const updatedProcs = p.procedures.filter(pr => pr.id !== procId);
+                const completed = updatedProcs.filter(x => x.status === 'completed').length;
+                const prog = updatedProcs.length > 0 ? Math.round((completed / updatedProcs.length) * 100) : 0;
+                return { ...p, procedures: updatedProcs, progress: prog };
+            });
+            saveData(activeModule, updatedPlans);
+        };
+
+        const addProc = (pid) => {
+            const t = prompt(planLabels.procedure + ":");
+            if(t) {
+                const updatedPlans = (dataStore[activeModule] || []).map(p => p.id === pid ? { ...p, procedures: [...(p.procedures||[]), { id: Date.now(), text: t, responsible: '-', deadline: '-', status: 'pending', witnessLink: '' }] } : p);
+                saveData(activeModule, updatedPlans);
+                showToast('تم إضافة الإجراء', 'success');
+            }
+        };
+
+        const deletePlan = (id) => { if(confirm("حذف الهدف بالكامل؟")) saveData(activeModule, (dataStore[activeModule] || []).filter(p => p.id !== id)); };
+
+        useEffect(() => {
+            if (referralData) {
+                document.body.classList.add('printing-referral');
+                setTimeout(() => { window.print(); setReferralData(null); document.body.classList.remove('printing-referral'); }, 500);
+            }
+        }, [referralData]);
+
+        const stats = useMemo(() => {
+            let t=0, c=0, inp=0, pend=0;
+            const plans = dataStore[activeModule] || [];
+            
+            if(activeModule === 'health_record_final_v7' || activeModule === 'students_db' || activeModule === 'sites_links') return null;
+            
+            plans.forEach(p => p.procedures?.forEach(pr => {
+                t++;
+                if(pr.status === 'completed') c++;
+                else if(pr.status === 'in_progress') inp++;
+                else pend++;
+            }));
+            
+            return { total: t, done: c, inProgress: inp, pending: pend, percent: t ? Math.round((c/t)*100) : 0 };
+        }, [dataStore, activeModule]);
+
+        const getProgressColor = (p) => {
+            if(p >= 100) return 'text-emerald-600';
+            if(p >= 75) return 'text-blue-600';
+            if(p >= 25) return 'text-orange-500';
+            return 'text-red-500';
+        };
+
+        const DashboardCard = ({ title, value, gradient, icon: IconComp }) => (
+            <div className={`p-5 rounded-2xl shadow-lg text-white flex items-center justify-between transform hover:scale-102 transition-transform duration-300 ${gradient} dark:opacity-90`}>
+                <div><p className="text-white/80 text-xs font-bold mb-1">{title}</p><h4 className="text-4xl font-black">{value}</h4></div>
+                <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm"><IconComp size={28} /></div>
+            </div>
+        );
+
+        const isHealth = activeModule === 'health_guide_plan' || activeModule === 'health_record_final_v7' || activeModule === 'gifted_plan';
+
+        return (
+            <div className="flex min-h-screen bg-slate-50 main-layout relative">
+                {toast && <Toast message={toast.message} type={toast.type} />}
+                
+                <ConnectionStatus />
+
+                {mobileMenuOpen && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex flex-col p-4 no-print" onClick={() => setMobileMenuOpen(false)}>
+                        <div className="flex justify-between items-center mb-8 text-white border-b border-slate-700 pb-4">
+                            <h2 className="text-2xl font-bold">الراشدون</h2>
+                            <button onClick={() => setMobileMenuOpen(false)} className="bg-slate-800 p-2 rounded-full"><Icons.X /></button>
+                        </div>
+                        <nav className="flex-1 overflow-y-auto space-y-2">
+                            {modules.map(m => {
+                                const Ico = Icons[m.icon];
+                                return <button key={m.id} onClick={(e) => { e.stopPropagation(); setActiveModule(m.id); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl font-bold text-lg transition-all ${activeModule === m.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}><Ico size={24}/> {m.name}</button>;
+                            })}
+                            <button onClick={(e) => { e.stopPropagation(); setActiveModule('settings'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl font-bold text-lg text-slate-400 hover:bg-slate-800`}><Icons.Settings size={24}/> الإعدادات</button>
+                        </nav>
+                    </div>
+                )}
+
+                <BMICalculator isOpen={bmiOpen} onClose={()=>setBmiOpen(false)} />
+                <ReferralForm data={referralData} logos={logos} destination={referralData?.destination} />
+                <PlanModal isOpen={planModalOpen} onClose={() => setPlanModalOpen(false)} onSave={savePlan} labels={planLabels} />
+
+                <aside className="fixed inset-y-0 right-0 bg-slate-900 dark:bg-dark-800 text-white w-64 z-40 hidden md:flex flex-col no-print">
+                    <div className="p-6 border-b border-slate-800"><h1 className="text-xl font-bold">الراشدون</h1><p className="text-slate-400 text-xs">نظام الموجه الصحي</p></div>
+                    <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                        {modules.map(m => {
+                            const Ico = Icons[m.icon];
+                            return <button key={m.id} onClick={()=>setActiveModule(m.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${activeModule===m.id ? 'bg-emerald-600' : 'hover:bg-slate-800 text-slate-400'}`}><Ico size={20}/> {m.name}</button>;
+                        })}
+                        <button onClick={()=>setActiveModule('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-800`}><Icons.Settings size={20}/> الإعدادات</button>
+                    </nav>
+                    <div className="p-4"><button onClick={()=>setDarkMode(!darkMode)} className="flex items-center gap-2 text-slate-400 text-xs font-bold"><Icons.Moon size={16}/> الوضع الليلي</button></div>
+                </aside>
+
+                <main className="flex-1 p-4 md:p-8 md:mr-64 main-content w-full">
+                    {activeModule !== 'settings' && (
+                        <CoverPage 
+                            moduleName={modules.find(m => m.id === activeModule)?.name} 
+                            icon={Icons[modules.find(m => m.id === activeModule)?.icon]}
+                            logos={logos}
+                            principal="أحمد سالم الشهري"
+                            preparer={{
+                                title: isHealth ? (activeModule === 'gifted_plan' ? 'منسق الموهوبين' : 'الموجه الصحي') : 'معد الخطة',
+                                name: isHealth ? 'علي إبراهيم عسيري' : 'لجنة التميز بالمدرسة'
+                            }}
+                        />
+                    )}
+
+                    <div className="md:hidden flex justify-between items-center p-4 mb-6 bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-slate-200 dark:border-dark-700 mobile-header no-print">
+                        <div><h1 className="font-bold text-lg text-slate-800 dark:text-white">الراشدون</h1><p className="text-xs text-slate-500">{modules.find(m => m.id === activeModule)?.name}</p></div>
+                        <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-slate-100 dark:bg-dark-700 rounded-lg text-slate-600 dark:text-slate-300"><Icons.Menu size={24}/></button>
+                    </div>
+
+                    <div className="show-in-print hidden justify-between items-center mb-8 border-b-4 border-double border-black pb-4">
+                        <div className="w-24 text-center">{logos.ministry && <img src={logos.ministry} className="w-20 mx-auto"/>}</div>
+                        <div className="text-center">
+                            <h2 className="font-bold">المملكة العربية السعودية - وزارة التعليم</h2>
+                            <h3>ابتدائية ومتوسطة الراشدون بالمربع</h3>
+                            <div className="bg-slate-800 text-white px-4 py-1 rounded mt-1 font-bold border-2 border-slate-900 print:bg-slate-800 print:text-white print:border-slate-900">{modules.find(m=>m.id===activeModule)?.name}</div>
+                        </div>
+                        <div className="w-24 text-center">{logos.vision && <img src={logos.vision} className="w-20 mx-auto"/>}</div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 no-print">
+                        <div className="hidden md:block">
+                            <h2 className="text-2xl font-black text-slate-800 dark:text-white">{modules.find(m=>m.id===activeModule)?.name}</h2>
+                            <p className="text-sm text-slate-500">إدارة ومتابعة السجلات والخطط</p>
+                        </div>
+                        <div className="flex gap-2 w-full md:w-auto">
+                            {activeModule !== 'health_record_final_v7' && activeModule !== 'sites_links' && activeModule !== 'students_db' && activeModule !== 'settings' && (
+                                <button onClick={() => setPlanModalOpen(true)} className="flex-1 md:flex-none bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-emerald-700"><Icons.Plus size={18}/> {planLabels.element}</button>
+                            )}
+                            <button onClick={() => window.print()} className="flex-1 md:flex-none bg-slate-800 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-900"><Icons.Printer size={18}/> طباعة</button>
+                        </div>
+                    </div>
+
+                    {activeModule === 'settings' ? (
+                        <div className="space-y-6 no-print">
+                             <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl shadow-sm">
+                                 <h3 className="font-bold mb-4 dark:text-white">الشعارات</h3>
+                                 <div className="grid grid-cols-3 gap-4">
+                                     {['vision', 'ministry', 'seal'].map(k => <ImageUploader key={k} label={k} currentImage={logos[k]} onImageUpload={img => {const n={...logos,[k]:img}; setLogos(n); db.collection('school_data').doc('settings').set(n, {merge:true});}} />)}
+                                 </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl shadow-sm">
+                                    <h3 className="font-bold mb-4 dark:text-white">مسميات القائمة الجانبية</h3>
+                                    <div className="space-y-3">
+                                        {modules.filter(m => m.id !== 'settings').map(m => (
+                                            <div key={m.id} className="flex items-center gap-2">
+                                                <span className="text-slate-400"><Icons.Edit size={16}/></span>
+                                                <input 
+                                                    type="text" 
+                                                    className="flex-1 bg-gray-50 dark:bg-dark-900 border rounded p-2 text-sm" 
+                                                    value={m.name} 
+                                                    onChange={(e) => setModules(prev => prev.map(pm => pm.id === m.id ? {...pm, name: e.target.value} : pm))}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl shadow-sm">
+                                    <h3 className="font-bold mb-4 dark:text-white">مصطلحات الخطط (الجداول)</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {Object.keys(DEFAULT_PLAN_LABELS).map(key => (
+                                            <div key={key}>
+                                                <label className="text-[10px] text-gray-400 block mb-1">{DEFAULT_PLAN_LABELS[key]}</label>
+                                                <input 
+                                                    type="text" 
+                                                    className="w-full bg-gray-50 dark:bg-dark-900 border rounded p-2 text-sm font-bold" 
+                                                    value={planLabels[key]} 
+                                                    onChange={(e) => setPlanLabels(prev => ({...prev, [key]: e.target.value}))}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                             </div>
+
+                             <div className="flex justify-end">
+                                <button onClick={saveModuleTitles} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2"><Icons.Save size={20}/> حفظ جميع الإعدادات</button>
+                             </div>
+                             
+                             <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-2xl shadow-sm border border-red-200 dark:border-red-900">
+                                <h3 className="font-bold mb-4 text-red-700 dark:text-red-400 flex items-center gap-2"><Icons.Alert size={20}/> منطقة الخطر (إدارة البيانات)</h3>
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <button onClick={clearClinicData} className="bg-red-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-red-700 flex-1">مسح جميع سجلات العيادة</button>
+                                    <button onClick={clearStudentsData} className="bg-red-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-red-700 flex-1">مسح قاعدة بيانات الطلاب</button>
+                                </div>
+                             </div>
+                        </div>
+                    ) : activeModule === 'students_db' ? (
+                        <StudentsDB students={dataStore['students_db'] || []} onSaveStudents={d => saveData('students_db', d)} showToast={showToast} />
+                    ) : activeModule === 'health_record_final_v7' ? (
+                        <HealthClinicView 
+                            records={dataStore['health_record_final_v7'] || []} 
+                            studentsDB={dataStore['students_db'] || []}
+                            onSaveRecord={r => { const curr = dataStore['health_record_final_v7'] || []; const exist = curr.findIndex(x=>x.id===r.id); saveData('health_record_final_v7', exist>=0 ? curr.map(x=>x.id===r.id?r:x) : [r,...curr]); }}
+                            onUpdateRecord={updateClinicRecord}
+                            onDeleteRecord={id => saveData('health_record_final_v7', dataStore['health_record_final_v7'].filter(x=>x.id!==id))}
+                            onOpenReferral={setReferralData}
+                            onOpenBMI={()=>setBmiOpen(true)}
+                            showToast={showToast}
+                        />
+                    ) : activeModule === 'sites_links' ? (
+                        <SitesLinksView data={dataStore['sites_links'] || []} onSave={(newData) => saveData('sites_links', newData)} />
+                    ) : (
+                        <div className="space-y-4">
+                             {stats && (
+                                <>
+                                {/* البطاقات الملونة (تظهر في الشاشة فقط) */}
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 no-print fade-in">
+                                    <div className="md:col-span-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        <DashboardCard title="إجمالي" value={stats.total} gradient="bg-gradient-to-br from-slate-700 to-slate-900" icon={Icons.Dashboard} />
+                                        <DashboardCard title="منجز" value={stats.done} gradient="bg-gradient-to-br from-emerald-500 to-teal-600" icon={Icons.CheckCircle} />
+                                        <DashboardCard title="جاري" value={stats.inProgress} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" icon={Icons.Improvement} /> 
+                                        <DashboardCard title="لم تبدأ" value={stats.pending} gradient="bg-gradient-to-br from-red-500 to-rose-600" icon={Icons.Alert} />
+                                        <div className="p-5 rounded-2xl shadow-lg bg-slate-700 text-white flex items-center justify-between col-span-2 md:col-span-1 lg:col-span-1">
+                                            <div><p className="text-white/80 text-xs font-bold mb-1">نسبة الإنجاز</p><h4 className="text-4xl font-black">{stats.percent}%</h4></div>
+                                            <div className="p-3 rounded-xl bg-white/20"><Icons.Target size={28}/></div>
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-1">
+                                        <ChartsSection plans={dataStore[activeModule] || []} />
+                                    </div>
+                                </div>
+
+                                {/* ملخص الإحصائيات (يظهر في الطباعة فقط) */}
+                                <div className="hidden show-in-print print-stats-summary">
+                                    <div className="flex-1">
+                                         <h3 className="font-bold text-xl mb-2">ملخص الإنجاز</h3>
+                                         <div className="grid grid-cols-2 gap-4 text-sm font-bold">
+                                             <div>المجموع: {stats.total}</div>
+                                             <div>المنجز: {stats.done}</div>
+                                             <div>الجاري: {stats.inProgress}</div>
+                                             <div>لم يبدأ: {stats.pending}</div>
+                                         </div>
+                                    </div>
+                                    <div className="text-center mx-8">
+                                         <div className="text-sm font-bold mb-1">نسبة الإنجاز العام</div>
+                                         <div className="text-4xl font-black">{stats.percent}%</div>
+                                    </div>
+                                    <div className="w-32 h-32 chart-print-view">
+                                         <ChartsSection plans={dataStore[activeModule] || []} isPrintMode={true} />
+                                    </div>
+                                </div>
+                                </>
+                             )}
+
+                             {(dataStore[activeModule] || []).map(p => (
+                                 <div key={p.id} className="print-card bg-white dark:bg-dark-800 p-4 rounded-xl border dark:border-dark-700 shadow-sm">
+                                     <div className="flex justify-between items-center mb-4 border-b pb-2">
+                                         <div className="flex gap-2 items-center flex-1">
+                                             <button onClick={()=>{
+                                                 const el = document.getElementById(`plan-${p.id}`);
+                                                 if(el) el.classList.toggle('hidden');
+                                             }} className="p-1 text-slate-400 hover:text-blue-500 transition-colors"><Icons.Down size={20}/></button>
+                                             
+                                             <div className="cursor-pointer flex flex-col gap-1 flex-1">
+                                                 <div className="text-xs text-blue-600 bg-blue-50 px-2 rounded w-fit">
+                                                     <EditableText value={p.domain} onChange={v=>updatePlan(p.id, 'domain', v)} className="font-normal" />
+                                                 </div>
+                                                 <div className="font-bold text-lg dark:text-white">
+                                                     <EditableText value={p.element} onChange={v=>updatePlan(p.id, 'element', v)} className="font-bold" />
+                                                 </div>
+                                             </div>
+                                         </div>
+
+                                         <div className="flex gap-3 items-center">
+                                             <div className={`font-black text-2xl ${getProgressColor(p.progress)}`}>{p.progress}%</div>
+                                             <button onClick={()=>deletePlan(p.id)} className="text-red-400 no-print"><Icons.Trash/></button>
+                                         </div>
+                                     </div>
+                                     <div id={`plan-${p.id}`} className="block">
+                                         <table className="w-full text-sm text-right">
+                                             <thead><tr>
+                                                 <th>{planLabels.procedure}</th>
+                                                 <th>{planLabels.responsible}</th>
+                                                 <th>{planLabels.deadline}</th>
+                                                 <th>{planLabels.witness}</th>
+                                                 <th>الحالة</th>
+                                             </tr></thead>
+                                             <tbody>{p.procedures?.map(pr=><tr key={pr.id} className="border-b dark:border-dark-700">
+                                                 <td className="p-2 dark:text-gray-300"><EditableText value={pr.text} onChange={v=>updateProc(p.id, pr.id, 'text', v)}/></td>
+                                                 <td className="p-2"><EditableText value={pr.responsible} onChange={v=>updateProc(p.id, pr.id, 'responsible', v)}/></td>
+                                                 <td className="p-2"><EditableText value={pr.deadline} onChange={v=>updateProc(p.id, pr.id, 'deadline', v)} placeholder="-"/></td>
+                                                 <td className="p-2 h-16 w-16"><WitnessCell link={pr.witnessLink} onChange={v=>updateProc(p.id, pr.id, 'witnessLink', v)} /></td>
+                                                 <td className="p-2 flex items-center gap-2"><Badge status={pr.status} onClick={()=>toggleProcStatus(p.id, pr.id)} /><button onClick={()=>deleteProc(p.id, pr.id)} className="text-red-400 no-print"><Icons.Trash size={14}/></button></td>
+                                             </tr>)}</tbody>
+                                         </table>
+                                         <button onClick={()=>addProc(p.id)} className="w-full mt-2 py-1 border border-dashed text-slate-400 text-xs no-print hover:text-emerald-500">إضافة {planLabels.procedure}</button>
+                                     </div>
+                                 </div>
+                             ))}
+                          </div>
+                    )}
+
+                    <div className="print-footer show-in-print justify-between mt-8 pt-4 border-t border-gray-400 break-inside-avoid">
+                        <div className="text-center w-1/3">
+                            <p className="font-bold">{isHealth ? (activeModule === 'gifted_plan' ? 'منسق الموهوبين' : 'الموجه الصحي') : 'معد الخطة'}</p>
+                            <p>{isHealth ? 'علي إبراهيم عسيري' : 'لجنة التميز بالمدرسة'}</p>
+                        </div>
+                        <div className="text-center w-1/3"><p className="font-bold">الختم</p>{logos.seal && <img src={logos.seal} className="w-16 mx-auto opacity-70"/>}</div>
+                        <div className="text-center w-1/3"><p className="font-bold">مدير المدرسة</p><p>أحمد سالم الشهري</p></div>
+                    </div>
+                </main>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>

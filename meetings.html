@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مولد المحاضر المطور - V3.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0E7557;
+            --primary-light: #e6fcf5;
+            --gold: #C5A47E;
+            --gold-light: #fff7ed;
+            --dark: #1f2937;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            color: var(--dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- لوحة التحكم --- */
+        .control-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 210mm;
+            margin-bottom: 30px;
+            border-top: 5px solid var(--primary);
+            box-sizing: border-box;
+        }
+
+        .input-group { margin-bottom: 15px; text-align: right; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Cairo'; box-sizing: border-box; }
+        
+        .date-wrapper { position: relative; display: flex; align-items: center; gap: 5px; }
+        .date-picker-btn { position: absolute; left: 5px; top: 50%; transform: translateY(-50%); opacity: 0; width: 30px; height: 100%; cursor: pointer; }
+        .calendar-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 1.2rem; }
+
+        .btn-print { 
+            background: var(--dark); color: white; width: 100%; padding: 12px; 
+            font-size: 1.1rem; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+        }
+        .btn-print:hover { background: black; }
+
+        /* --- الورقة --- */
+        .paper {
+            background: white;
+            width: 210mm;
+            height: 296mm;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* الغلاف */
+        .cover-page { display: flex; flex-direction: column; text-align: center; }
+        .cover-body { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle, #f0fdf4 0%, #fff 70%); }
+        .cover-box { border: 4px double var(--primary); padding: 40px; border-radius: 20px; background: rgba(255,255,255,0.95); width: 80%; }
+
+        /* الصفحة الداخلية */
+        .inner-page { padding: 15mm; }
+        .page-border { position: absolute; top: 5mm; left: 5mm; right: 5mm; bottom: 5mm; border: 2px solid var(--primary); pointer-events: none; z-index: 99; }
+        .page-border::after { content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px; border: 1px solid var(--gold); }
+        .content-container { height: 100%; display: flex; flex-direction: column; }
+
+        /* الترويسة */
+        .header-official { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .logo-box { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
+        .logo-box img { max-width: 100%; max-height: 100%; }
+        .header-text { text-align: center; font-weight: bold; font-size: 0.85rem; line-height: 1.6; }
+
+        .meeting-title-box { background: var(--primary); color: white; margin: 0 auto 15px auto; padding: 5px 25px; border-radius: 20px; font-weight: bold; width: fit-content; }
+
+        /* الجدول */
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 0.85rem; }
+        .info-table td { border: 1px solid #ddd; padding: 5px 10px; }
+        .label-cell { background: #f0fdf4; font-weight: bold; width: 15%; color: var(--primary); }
+
+        /* المحتوى المطور (البطاقات الانسيابية) */
+        .section-header { 
+            font-size: 1rem; font-weight: bold; color: var(--primary); 
+            border-bottom: 2px solid var(--gold); margin-bottom: 10px; 
+            padding-bottom: 5px; display: flex; align-items: center; gap: 8px;
+        }
+
+        .list-container {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px; /* مسافة بين البطاقات */
+        }
+
+        /* تصميم البطاقة العامة */
+        .item-card {
+            display: flex;
+            align-items: flex-start; /* لضمان المحاذاة مع النصوص الطويلة */
+            padding: 8px 12px;
+            border-radius: 12px; /* حواف ناعمة انسيابية */
+            font-size: 0.9rem;
+            line-height: 1.5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            border: 1px solid transparent;
+            transition: 0.2s;
+        }
+
+        /* بطاقات المحاور (أخضر) */
+        .agenda-card {
+            background-color: var(--primary-light);
+            border-right: 4px solid var(--primary); /* خط ملون يمين */
+            color: #064e3b;
+        }
+
+        /* بطاقات التوصيات (ذهبي/برتقالي) */
+        .rec-card {
+            background-color: var(--gold-light);
+            border-right: 4px solid var(--gold);
+            color: #7c2d12;
+        }
+
+        /* أيقونة الرقم */
+        .item-num {
+            background: white;
+            min-width: 24px; height: 24px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 0.8rem;
+            margin-left: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .agenda-card .item-num { color: var(--primary); border: 1px solid var(--primary); }
+        .rec-card .item-num { color: var(--gold); border: 1px solid var(--gold); }
+
+
+        /* التواقيع */
+        .signatures-section { display: flex; justify-content: space-between; padding: 0 30px; margin-top: auto; margin-bottom: 10px; }
+        .sig-block { text-align: center; width: 40%; }
+        .sig-role { font-weight: bold; color: #555; font-size: 0.8rem; margin-bottom: 40px; }
+        .sig-name { font-weight: bold; color: black; font-size: 1rem; border-top: 1px solid #ccc; padding-top: 5px; }
+
+        @media print {
+            @page { size: A4; margin: 0; }
+            body { background: white; margin: 0; padding: 0; display: block; }
+            .control-panel { display: none !important; }
+            .paper { margin: 0 auto !important; box-shadow: none !important; page-break-after: always; page-break-inside: avoid; left: 0; top: 0; }
+            .inner-page { height: 296mm !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="control-panel">
+    <h3 style="margin-top:0; color:var(--primary); border-bottom:1px solid #eee; padding-bottom:10px;">إعدادات المحضر</h3>
+    
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+        <div class="input-group">
+            <label>القالب</label>
+            <select id="templateSelector" onchange="applyTemplate()" style="background:#f0fdf4; border-color:var(--primary);">
+                <option value="none">-- اختر اللجنة --</option>
+                <option value="guidance">التوجيه الطلابي</option>
+                <option value="health">التوجيه الصحي</option>
+                <option value="gifted">الموهوبين</option>
+                <option value="activity">النشاط الطلابي</option>
+                <option value="excellence">التميز والجودة</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>الشعارات</label>
+            <div style="display:flex; gap:5px;">
+                <button onclick="document.getElementById('logoRIn').click()" style="width:50%; padding:5px;">شعار يمين</button>
+                <button onclick="document.getElementById('logoLIn').click()" style="width:50%; padding:5px;">شعار يسار</button>
+                <input type="file" id="logoRIn" hidden accept="image/*" onchange="uploadLogo('right', this)">
+                <input type="file" id="logoLIn" hidden accept="image/*" onchange="uploadLogo('left', this)">
+            </div>
+        </div>
+    </div>
+
+    <details style="margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:5px;">
+        <summary style="cursor:pointer; font-weight:bold;">تعديل الترويسة</summary>
+        <input type="text" id="h1In" value="المملكة العربية السعودية" style="margin-top:5px;">
+        <input type="text" id="h2In" value="وزارة التعليم">
+        <input type="text" id="h3In" value="الإدارة العامة للتعليم بمنطقة عسير">
+        <input type="text" id="h4In" value="ابتدائية ومتوسطة الراشدون بالمربع">
+    </details>
+
+    <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:10px;">
+        <div class="input-group"><label>العنوان</label><input type="text" id="topicIn"></div>
+        <div class="input-group">
+            <label>التاريخ (هجري)</label>
+            <div class="date-wrapper">
+                <input type="text" id="dateIn" placeholder="1447/--/-- هـ">
+                <span class="calendar-icon">📅</span>
+                <input type="date" class="date-picker-btn" onchange="convertDate(this)">
+            </div>
+        </div>
+        <div class="input-group"><label>الرقم</label><input type="number" id="numIn" value="1"></div>
+    </div>
+
+    <div class="input-group"><label>الحضور</label><textarea id="attendeesIn" rows="2"></textarea></div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="input-group"><label>المحاور (كل محور في سطر)</label><textarea id="agendaIn" rows="8" placeholder="اكتب كل نقطة في سطر جديد..."></textarea></div>
+        <div class="input-group"><label>التوصيات (كل توصية في سطر)</label><textarea id="recsIn" rows="8" placeholder="اكتب كل نقطة في سطر جديد..."></textarea></div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="input-group"><label>المقرر</label><input type="text" id="authorIn"></div>
+        <div class="input-group"><label>المدير</label><input type="text" id="managerIn" value="أحمد سالم الشهري"></div>
+    </div>
+
+    <button class="btn-print" onclick="window.print()">🖨️ طباعة (A4)</button>
+</div>
+
+<div class="paper cover-page">
+    <div style="height:15px; background:linear-gradient(90deg, var(--primary), var(--gold)); width:100%;"></div>
+    <div class="cover-body">
+        <div class="cover-box">
+            <div style="display:flex; justify-content:space-between; height: 80px; margin-bottom:20px;">
+                <img id="coverLogoR" src="" style="height:100%; opacity:0; object-fit:contain;"> 
+                <img id="coverLogoL" src="" style="height:100%; opacity:0; object-fit:contain;">
+            </div>
+            <h3 style="color:var(--gold); margin:0;">المملكة العربية السعودية</h3>
+            <h3 style="color:var(--primary); margin:5px 0 20px 0;">وزارة التعليم</h3>
+            <h1 style="font-size:3rem; margin:20px 0; color:var(--dark);">سجل المحاضر<br><span style="color:var(--primary)">والاجتماعات</span></h1>
+            <hr style="width:100px; border:2px solid var(--gold); margin:20px auto;">
+            <h2 id="coverTopic" style="color:#555; margin-top:30px;">--</h2>
+            <div style="background:var(--dark); color:white; padding:5px 20px; border-radius:50px; display:inline-block; margin-top:20px;">1447هـ</div>
+            <div style="margin-top:60px; display:flex; justify-content:space-around;">
+                <div><small style="color:#888;">المقرر</small><br><strong id="coverAuthor" style="font-size:1.1rem;">--</strong></div>
+                <div><small style="color:#888;">المدير</small><br><strong id="coverManager" style="font-size:1.1rem;">أحمد سالم الشهري</strong></div>
+            </div>
+        </div>
+    </div>
+    <div style="height:15px; background:linear-gradient(90deg, var(--gold), var(--primary)); width:100%;"></div>
+</div>
+
+<div class="paper inner-page">
+    <div class="page-border"></div>
+    <div class="content-container">
+        <div class="header-official">
+            <div class="logo-box"><img id="headerLogoR" alt=""></div>
+            <div class="header-text">
+                <div id="ph1">المملكة العربية السعودية</div>
+                <div id="ph2">وزارة التعليم</div>
+                <div id="ph3">الإدارة العامة للتعليم بمنطقة عسير</div>
+                <div id="ph4">ابتدائية ومتوسطة الراشدون بالمربع</div>
+            </div>
+            <div class="logo-box"><img id="headerLogoL" alt=""></div>
+        </div>
+
+        <div style="text-align:center;">
+            <div class="meeting-title-box" id="paperTopic">عنوان الاجتماع</div>
+        </div>
+
+        <table class="info-table">
+            <tr>
+                <td class="label-cell">الرقم</td><td style="width:10%; text-align:center;" id="paperNum">1</td>
+                <td class="label-cell" style="width:10%;">التاريخ</td><td style="text-align:center;" id="paperDate">--</td>
+            </tr>
+            <tr>
+                <td class="label-cell">الحضور</td>
+                <td colspan="3" id="paperAttendees" style="white-space: pre-line;">--</td>
+            </tr>
+        </table>
+
+        <div class="section-header">
+            <span style="background:var(--primary); color:white; border-radius:50%; width:24px; height:24px; text-align:center; display:inline-block; line-height:24px;">1</span> 
+            جدول الأعمال والمحاور
+        </div>
+        <div class="list-container" id="agendaContainer">
+            </div>
+
+        <div class="section-header">
+            <span style="background:var(--gold); color:white; border-radius:50%; width:24px; height:24px; text-align:center; display:inline-block; line-height:24px;">2</span> 
+            التوصيات والقرارات
+        </div>
+        <div class="list-container" id="recsContainer">
+             </div>
+
+        <div class="signatures-section">
+            <div class="sig-block"><div class="sig-role">مقرر اللجنة</div><div class="sig-name" id="paperAuthorName">--</div></div>
+            <div class="sig-block"><div class="sig-role">مدير المدرسة</div><div class="sig-name" id="paperManagerName">أحمد سالم الشهري</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- قوالب النصوص ---
+    const fullTemplates = {
+        health: { topic: "اجتماع التوجيه الصحي (البيئة المدرسية)", author: "علي إبراهيم عسيري", agenda: "الافتتاح وحمد الله والثناء عليه.\nمناقشة تقارير النظافة الدورية للفصول والمرافق.\nالتأكد من سلامة برادات المياه وصلاحية المقصف المدرسي.\nاستعراض خطة التوعية الصحية للأسبوع القادم.", recs: "تكليف مشرفي الأجنحة بمتابعة النظافة يومياً.\nمخاطبة متعهد المقصف لتوفير أغذية صحية متنوعة.\nتنفيذ إذاعة صباحية عن أهمية الغذاء الصحي.\nاعتماد خطة التوجيه الصحي لهذا الفصل." },
+        guidance: { topic: "اجتماع التوجيه الطلابي (المتأخرين دراسياً)", author: "الموجه الطلابي", agenda: "حصر الطلاب الحاصلين على تقديرات منخفضة.\nدراسة أسباب التأخر الدراسي (غياب، ظروف أسرية).\nمناقشة الخطط العلاجية المقترحة من المعلمين.", recs: "عقد لقاءات فردية مع الطلاب لبحث المعوقات.\nإشعار أولياء الأمور بمستوى أبنائهم.\nتفعيل حصص التقوية للمواد الأساسية." },
+        gifted: { topic: "اجتماع لجنة الموهوبين (الترشيح)", author: "منسق الموهوبين", agenda: "التعريف ببرنامج الكشف عن الموهوبين.\nآلية ترشيح الطلاب للمقياس الوطني.\nالتحديات التي تواجه عملية التسجيل.", recs: "تشكيل فريق لمساعدة الطلاب في التسجيل.\nتنفيذ ورشة عمل تعريفية بالمقياس.\nتكريم الطلاب المجتازين للعام الماضي." },
+        activity: { topic: "اجتماع النشاط الطلابي", author: "رائد النشاط", agenda: "توزيع مهام رواد النشاط.\nالاستعداد لبرامج اليوم الوطني.\nتفعيل ساعة النشاط الأسبوعية.", recs: "اعتماد اللجان العاملة للحفل.\nتقديم خطة فصلية لكل جماعة.\nتوثيق الفعاليات ونشرها." },
+        excellence: { topic: "اجتماع التميز والجودة", author: "وكيل الشؤون التعليمية", agenda: "تحليل نتائج اختبارات نافس.\nمراجعة ملفات إنجاز المعلمين.\nخطط التحسين المقترحة.", recs: "عقد ورش عمل لطرق التدريس.\nتكريم المعلمين المتميزين.\nتفعيل مجتمعات التعلم المهنية." }
+    };
+
+    // --- دالة جديدة لتوليد البطاقات الملونة ---
+    function renderList(text, containerId, type) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = ''; // مسح المحتوى السابق
+        
+        // تقسيم النص لأسطر، وتجاهل الأسطر الفارغة
+        const items = text.split('\n').filter(line => line.trim() !== '');
+        
+        items.forEach((item, index) => {
+            // إزالة الأرقام المكتوبة يدوياً في بداية السطر إذا وجدت (مثل 1. أو - )
+            const cleanText = item.replace(/^[\d\-\.]+\s*/, '');
+            
+            const card = document.createElement('div');
+            // تحديد الكلاس حسب النوع (محور أم توصية)
+            card.className = `item-card ${type === 'agenda' ? 'agenda-card' : 'rec-card'}`;
+            
+            card.innerHTML = `
+                <div class="item-num">${index + 1}</div>
+                <div>${cleanText}</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // --- التحديث ---
+    const simpleIds = ['topic','date','num','attendees','author','manager','h1','h2','h3','h4'];
+    
+    // إضافة مستمعين
+    simpleIds.forEach(id => {
+        const el = document.getElementById(id+'In');
+        if(el) el.addEventListener('input', updateSimpleFields);
+    });
+
+    // مستمعين خاصين بالمحاور والتوصيات
+    document.getElementById('agendaIn').addEventListener('input', () => renderList(document.getElementById('agendaIn').value, 'agendaContainer', 'agenda'));
+    document.getElementById('recsIn').addEventListener('input', () => renderList(document.getElementById('recsIn').value, 'recsContainer', 'recs'));
+
+    function updateSimpleFields() {
+        document.getElementById('paperTopic').textContent = document.getElementById('topicIn').value;
+        document.getElementById('coverTopic').textContent = document.getElementById('topicIn').value;
+        document.getElementById('paperDate').textContent = document.getElementById('dateIn').value;
+        document.getElementById('paperNum').textContent = document.getElementById('numIn').value;
+        document.getElementById('paperAttendees').textContent = document.getElementById('attendeesIn').value;
+        
+        const auth = document.getElementById('authorIn').value;
+        const mgr = document.getElementById('managerIn').value;
+        document.getElementById('paperAuthorName').textContent = auth;
+        document.getElementById('coverAuthor').textContent = auth;
+        document.getElementById('paperManagerName').textContent = mgr;
+        document.getElementById('coverManager').textContent = mgr;
+
+        document.getElementById('ph1').textContent = document.getElementById('h1In').value;
+        document.getElementById('ph2').textContent = document.getElementById('h2In').value;
+        document.getElementById('ph3').textContent = document.getElementById('h3In').value;
+        document.getElementById('ph4').textContent = document.getElementById('h4In').value;
+    }
+
+    function updateLists() {
+        renderList(document.getElementById('agendaIn').value, 'agendaContainer', 'agenda');
+        renderList(document.getElementById('recsIn').value, 'recsContainer', 'recs');
+    }
+
+    function convertDate(picker) {
+        if(!picker.value) return;
+        const d = new Date(picker.value);
+        const hijriDate = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'numeric', year: 'numeric' }).format(d);
+        document.getElementById('dateIn').value = hijriDate + ' هـ';
+        updateSimpleFields();
+    }
+
+    function applyTemplate() {
+        const type = document.getElementById('templateSelector').value;
+        if(fullTemplates[type]) {
+            const t = fullTemplates[type];
+            document.getElementById('topicIn').value = t.topic;
+            document.getElementById('authorIn').value = t.author;
+            document.getElementById('agendaIn').value = t.agenda; // نصوص مفصولة بأسطر
+            document.getElementById('recsIn').value = t.recs;
+            updateSimpleFields();
+            updateLists(); // تحديث البطاقات
+        }
+    }
+
+    function uploadLogo(side, input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                localStorage.setItem(`logo_${side}_v5`, e.target.result);
+                displayLogos();
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function displayLogos() {
+        const r = localStorage.getItem('logo_right_v5');
+        const l = localStorage.getItem('logo_left_v5');
+        if(r) { document.getElementById('headerLogoR').src = r; document.getElementById('coverLogoR').src = r; document.getElementById('coverLogoR').style.opacity = 1; }
+        if(l) { document.getElementById('headerLogoL').src = l; document.getElementById('coverLogoL').src = l; document.getElementById('coverLogoL').style.opacity = 1; }
+    }
+
+    window.onload = function() { displayLogos(); updateSimpleFields(); updateLists(); };
+</script>
+
+</body>
+</html>

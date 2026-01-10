@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خطة تنفيذ برامج التطوير المهني</title>
+    <style>
+        :root { --main-teal: #006c70; --sub-teal: #1a898d; --orange-header: #e49e62; --light-gray-bar: #f4f6f8; --green-btn: #27ae60; --green-btn-hover: #219d55; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 10px; background-color: #f9f9f9; }
+        
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* --- لوحة التحكم --- */
+        .control-panel {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .control-btn {
+            padding: 8px 20px; border: none; border-radius: 5px; cursor: pointer;
+            font-weight: bold; font-family: inherit; font-size: 1em; transition: background 0.3s;
+        }
+        .btn-save { background-color: var(--green-btn); color: white; }
+        .btn-load { background-color: #e67e22; color: white; }
+        .btn-print { background-color: #2980b9; color: white; }
+        .btn-reset { background-color: #c0392b; color: white; }
+
+        /* --- الترويسة --- */
+        .top-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 15px; 
+            height: 120px;
+        }
+        
+        .logo-wrapper { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 150px;
+            justify-content: center;
+        }
+        
+        .header-logo { 
+            max-height: 80px !important; 
+            max-width: 140px !important; 
+            width: auto; height: auto; 
+            object-fit: contain; 
+        }
+        
+        .logo-upload { font-size: 0.65em; width: 100%; margin-top: 5px; text-align: center; }
+
+        .header-center { 
+            flex-grow: 1; 
+            text-align: center; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+        }
+        
+        .ministry-text { font-size: 0.9em; color: #333; line-height: 1.4; font-weight: 600; margin-bottom: 8px; }
+        
+        .school-pill {
+            background-color: var(--main-teal);
+            color: white;
+            padding: 8px 40px;
+            border-radius: 50px;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 5px;
+            display: inline-block;
+            min-width: 280px;
+            border: 2px solid var(--main-teal);
+        }
+
+        /* --- باقي التنسيقات --- */
+        [contenteditable="true"]:hover { outline: 1px dashed #aaa; background-color: #fffef0; cursor: text; }
+        [contenteditable="true"]:focus { outline: 2px solid var(--main-teal); background-color: #fff; }
+
+        .info-bar {
+            background-color: var(--light-gray-bar);
+            border-right: 5px solid var(--orange-header);
+            border-radius: 8px;
+            padding: 8px 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 0.85em;
+            color: #333;
+        }
+        .info-item { display: flex; align-items: center; gap: 5px; }
+
+        .letter-body { margin-bottom: 10px; text-align: right; }
+        .subject-line { text-align: center; font-weight: bold; font-size: 1em; text-decoration: underline; margin-bottom: 10px; }
+        .greeting { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+        .intro-text { line-height: 1.5; text-align: justify; font-size: 0.85em; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 0.75em; }
+        thead th { background-color: #2c2a38; color: white; padding: 5px; text-align: center; font-weight: bold; border: 1px solid #fff; }
+        td { padding: 5px; text-align: center; border: 1px solid #e0e0e0; vertical-align: middle; color: #333; font-weight: 600; height: auto; }
+        
+        .week-col { background-color: var(--main-teal); color: white; width: 90px; font-size: 0.9em; }
+        .date-text { display: block; font-size: 0.8em; opacity: 0.95; font-weight: normal; direction: ltr; unicode-bidi: embed; }
+        
+        .action-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 100%; }
+        .url-input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; width: 95%; font-size: 0.8em; text-align: center; direction: ltr; background: #fffcf5; margin-bottom: 2px; }
+        
+        .qr-btn-container { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+        
+        /* --- الباركود متوسط الحجم --- */
+        .generated-qr { width: 60px; height: 60px; display: none; border: 1px solid #ddd; padding: 2px; background: white; }
+        
+        /* --- زر الرابط الأخضر --- */
+        .link-btn { background-color: var(--green-btn); color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85em; display: none; white-space: nowrap; transition: background-color 0.2s; }
+        .link-btn:hover { background-color: var(--green-btn-hover); }
+        .link-btn.active { display: inline-block; }
+
+        .special-section { background-color: var(--orange-header); color: white; text-align: center; font-weight: bold; padding: 5px; font-size: 0.9em; }
+        
+        .qr-section { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 15px; margin: 5px 0; padding: 5px; background-color: #f4fbfb; border: 1px dashed var(--main-teal); border-radius: 8px; text-align: center; height: 70px; }
+        .qr-text { color: var(--main-teal); font-size: 0.85em; font-weight: bold; }
+        .qr-image-large { width: 60px; height: 60px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: none; }
+        
+        .footer { display: flex; justify-content: space-around; margin-top: 5px; padding-top: 5px; border-top: 1px solid #eee; }
+        .footer-item { text-align: center; font-size: 0.8em; }
+        .footer-role { font-weight: bold; color: #333; margin-bottom: 3px; display: block; }
+
+        /* --- إعدادات الطباعة المعدلة لضمان صفحة واحدة --- */
+        @media print {
+            @page { size: A4; margin: 3mm; }
+            
+            body { 
+                background: white; 
+                padding: 0; 
+                zoom: 0.9; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+            
+            .container { box-shadow: none; width: 100%; max-width: 100%; padding: 0; margin: 0; border: none; }
+            .no-print, .url-input, .logo-upload, .control-panel { display: none !important; }
+            [contenteditable="true"] { outline: none !important; }
+            
+            .top-header { height: 100px; margin-bottom: 5px; } 
+            .header-logo { max-height: 60px !important; }
+            .info-bar { padding: 4px 10px; margin: 5px 0; }
+            .letter-body { margin-bottom: 5px; }
+            
+            td, th { padding: 2px !important; font-size: 0.75em; }
+            .action-cell { gap: 2px; }
+            
+            .generated-qr, .qr-image-large { display: block !important; }
+            .link-btn { display: inline-block !important; background-color: transparent !important; color: #000 !important; border: 1px solid #000; padding: 1px 6px; font-size: 0.7em; text-decoration: none; }
+            
+            .school-pill { padding: 5px 30px; margin-top: 2px; }
+            .qr-section { margin-top: 2px; height: 60px; }
+            .footer { margin-top: 2px; padding-top: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="control-panel no-print">
+    <button onclick="saveData()" class="control-btn btn-save">💾 حفظ البيانات</button>
+    <button onclick="loadData()" class="control-btn btn-load">🔄 استرجاع البيانات</button>
+    <button onclick="resetData()" class="control-btn btn-reset">❌ تنظيف الكل (بدء جديد)</button>
+    <button onclick="window.print()" class="control-btn btn-print">🖨️ طباعة</button>
+</div>
+
+<div class="container">
+    
+    <div class="top-header">
+        <div class="logo-wrapper">
+            <img id="logo-right" class="header-logo" src="https://via.placeholder.com/150x100?text=Logo+1" alt="شعار">
+            <input type="file" class="logo-upload no-print" accept="image/*" onchange="loadLogo(event, 'logo-right')">
+        </div>
+        
+        <div class="header-center">
+            <div class="ministry-text">
+                <div contenteditable="true" data-key="header-1">المملكة العربية السعودية</div>
+                <div contenteditable="true" data-key="header-2">وزارة التعليم</div>
+                <div contenteditable="true" data-key="header-3">الإدارة العامة للتعليم بمنطقة عسير</div>
+            </div>
+            <div class="school-pill" contenteditable="true" data-key="school-name">ابتدائية ومتوسطة الراشدون</div>
+        </div>
+
+        <div class="logo-wrapper">
+            <img id="logo-left" class="header-logo" src="https://via.placeholder.com/150x100?text=Vision+2030" alt="شعار">
+            <input type="file" class="logo-upload no-print" accept="image/*" onchange="loadLogo(event, 'logo-left')">
+        </div>
+    </div>
+
+    <div class="info-bar">
+        <div class="info-item">
+            <span>📅</span>
+            <span contenteditable="true" data-key="info-date">التاريخ: 26 / 07 / 1447 هـ</span>
+        </div>
+        <div class="info-item">
+            <span>📝</span>
+            <span contenteditable="true" data-key="info-type">تعميم داخلي</span>
+        </div>
+        <div class="info-item">
+            <span>👤</span>
+            <span contenteditable="true" data-key="info-sender">من مدير المدرسة إلى: المعلمين والإداريين الكرام</span>
+        </div>
+    </div>
+
+    <div class="letter-body">
+        <div class="subject-line" contenteditable="true" data-key="subject">بشأن: خطة تنفيذ برامج التطوير المهني</div>
+        <div class="greeting" contenteditable="true" data-key="greeting">السلام عليكم ورحمة الله وبركاته ... وبعد</div>
+        <div class="intro-text" contenteditable="true" data-key="intro">
+            ضمن إجراءات خطة التحسين تجدون جدول خطة البرامج التدريبية للتطوير المهني خلال هذ العام الدراسي 1447 - 1448 هـ ، مع العلم بأنه سيتم تقييد الإنجاز في استمارة إنجاز الدورات لكل معلم فأمل منكم الحصول على الدورات أدناه وموافاتنا بالإنجاز اسبوعياً والله الموفق.
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="12%" contenteditable="true">الأسبوع / التاريخ</th>
+                <th width="33%" contenteditable="true">البرنامج التدريبي</th>
+                <th width="25%" contenteditable="true">مركز التدريب</th>
+                <th width="30%" contenteditable="true">الرابط / الباركود</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="week-col">
+                    <span contenteditable="true">السابع عشر (ف1)</span><br>
+                    <span class="date-text" contenteditable="true">1 - 5 / 7 / 1447هـ</span>
+                </td>
+                <td contenteditable="true">التخطيط للتدريس<br>(معلمون)</td>
+                <td contenteditable="true">المعهد الوطني للتطوير المهني التعليمي</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container">
+                            <img src="" class="generated-qr" alt="QR">
+                            <a href="#" target="_blank" class="link-btn">فتح</a>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="week-col"><span contenteditable="true">الثامن عشر (ف1)</span></td>
+                <td contenteditable="true">التدريس الفعال</td>
+                <td contenteditable="true">المعهد الوطني</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container"><img src="" class="generated-qr" alt="QR"><a href="#" target="_blank" class="link-btn">فتح</a></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="week-col"><span contenteditable="true">الأول (ف2)</span></td>
+                <td contenteditable="true">إدارة البيئة الصفية</td>
+                <td contenteditable="true">المعهد الوطني</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container"><img src="" class="generated-qr" alt="QR"><a href="#" target="_blank" class="link-btn">فتح</a></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="week-col"><span contenteditable="true">الثاني (ف2)</span></td>
+                <td contenteditable="true">التقويم من أجل التعلم</td>
+                <td contenteditable="true">المعهد الوطني</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container"><img src="" class="generated-qr" alt="QR"><a href="#" target="_blank" class="link-btn">فتح</a></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="week-col"><span contenteditable="true">الثالث (ف2)</span></td>
+                <td contenteditable="true">إدارة الأداء الوظيفي</td>
+                <td contenteditable="true">منصة أبعاد</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container"><img src="" class="generated-qr" alt="QR"><a href="#" target="_blank" class="link-btn">فتح</a></div>
+                    </div>
+                </td>
+            </tr>
+             <tr>
+                <td class="week-col"><span contenteditable="true">الرابع (ف2)</span></td>
+                <td contenteditable="true">إدارة الأداء (موجه)</td>
+                <td contenteditable="true">منصة أبعاد</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container"><img src="" class="generated-qr" alt="QR"><a href="#" target="_blank" class="link-btn">فتح</a></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4" class="special-section" contenteditable="true">دورات تخصصية لمعلمي اللغة العربية والعلوم والرياضيات</td>
+            </tr>
+            <tr>
+                <td rowspan="3" class="week-col"><span contenteditable="true">الخامس (ف2)</span></td>
+                <td contenteditable="true">استراتيجيات اللغة العربية</td>
+                <td rowspan="3" contenteditable="true">المعهد الوطني</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container"><img src="" class="generated-qr" alt="QR"><a href="#" target="_blank" class="link-btn">فتح</a></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td contenteditable="true">استراتيجيات العلوم</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container"><img src="" class="generated-qr" alt="QR"><a href="#" target="_blank" class="link-btn">فتح</a></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td contenteditable="true">استراتيجيات الرياضيات</td>
+                <td>
+                    <div class="action-cell">
+                        <input type="text" class="url-input" placeholder="الرابط هنا..." oninput="updateRow(this)">
+                        <div class="qr-btn-container"><img src="" class="generated-qr" alt="QR"><a href="#" target="_blank" class="link-btn">فتح</a></div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="qr-section">
+        <div class="qr-text" contenteditable="true" data-key="bottom-text">
+            للاستزادة من الدورات من المعهد الوطني للتطوير المهني التعليمي
+        </div>
+        <input type="text" id="bottom-url-input" class="url-input" style="width: 40%;" placeholder="الرابط هنا..." oninput="updateBottomQR(this)">
+        <a href="#" target="_blank" id="bottom-link-btn" class="link-btn">فتح</a>
+        <img id="bottom-qr-img" src="" alt="QR" class="qr-image-large">
+    </div>
+
+    <div class="footer">
+        <div class="footer-item">
+            <span class="footer-role" contenteditable="true" data-key="footer-role1">وكيل الشؤون التعليمية</span>
+            <span class="footer-name" contenteditable="true" data-key="footer-name1">محمد حسن الشهري</span>
+        </div>
+        <div class="footer-item">
+            <span class="footer-role" contenteditable="true" data-key="footer-role2">مدير المدرسة</span>
+            <span class="footer-name" contenteditable="true" data-key="footer-name2">أحمد سالم الشهري</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateRow(inputElement) {
+        const cell = inputElement.closest('td');
+        const linkBtn = cell.querySelector('.link-btn');
+        const qrImage = cell.querySelector('.generated-qr');
+        let url = inputElement.value.trim();
+
+        if (url.length > 0) {
+            qrImage.src = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=200`;
+            qrImage.style.display = 'block';
+            
+            let hrefUrl = url;
+            if (!hrefUrl.match(/^https?:\/\//i)) {
+                hrefUrl = 'https://' + hrefUrl;
+            }
+            
+            linkBtn.href = hrefUrl;
+            linkBtn.classList.add('active');
+        } else {
+            linkBtn.classList.remove('active');
+            qrImage.style.display = 'none';
+        }
+    }
+
+    function updateBottomQR(inputElement) {
+        const qrImage = document.getElementById('bottom-qr-img');
+        const linkBtn = document.getElementById('bottom-link-btn'); // تعريف الزر السفلي
+        const url = inputElement.value.trim();
+
+        if (url.length > 0) {
+            qrImage.src = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=200`;
+            qrImage.style.display = 'block';
+
+            // تحديث رابط الزر السفلي
+            let hrefUrl = url;
+            if (!hrefUrl.match(/^https?:\/\//i)) {
+                hrefUrl = 'https://' + hrefUrl;
+            }
+            linkBtn.href = hrefUrl;
+            linkBtn.style.display = 'inline-block'; // إظهار الزر
+        } else {
+            qrImage.style.display = 'none';
+            linkBtn.style.display = 'none'; // إخفاء الزر
+        }
+    }
+
+    function loadLogo(event, imgId) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById(imgId).src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function saveData() {
+        try {
+            const data = {
+                inputs: [],
+                editables: [],
+                logos: {},
+                bottomUrl: document.getElementById('bottom-url-input').value
+            };
+            document.querySelectorAll('table .url-input').forEach((el) => {
+                data.inputs.push(el.value);
+            });
+            document.querySelectorAll('[contenteditable="true"]').forEach((el) => {
+                const key = el.getAttribute('data-key') || 'unknown';
+                data.editables.push({ key: key, html: el.innerHTML });
+            });
+            data.logos.right = document.getElementById('logo-right').src;
+            data.logos.left = document.getElementById('logo-left').src;
+
+            localStorage.setItem('schoolFormData_v4', JSON.stringify(data));
+            alert('تم الحفظ بنجاح.');
+        } catch (e) {
+            alert('خطأ في الحفظ (قد تكون الصورة كبيرة جداً).');
+        }
+    }
+
+    function loadData() {
+        let stored = localStorage.getItem('schoolFormData_v4');
+        if (!stored) stored = localStorage.getItem('schoolFormData_v3');
+        if (!stored) stored = localStorage.getItem('schoolFormData_v2');
+
+        if(!stored) { alert('لا توجد بيانات محفوظة مسبقاً في أي نسخة.'); return; }
+        
+        const data = JSON.parse(stored);
+
+        const inputs = document.querySelectorAll('table .url-input');
+        if(data.inputs) {
+            inputs.forEach((el, index) => {
+                if(data.inputs[index]) { el.value = data.inputs[index]; updateRow(el); }
+            });
+        }
+        if(data.editables) {
+            data.editables.forEach(item => {
+                const el = document.querySelector(`[data-key="${item.key}"]`);
+                if(el) el.innerHTML = item.html;
+            });
+        }
+        if(data.logos) {
+            if(data.logos.right) document.getElementById('logo-right').src = data.logos.right;
+            if(data.logos.left) document.getElementById('logo-left').src = data.logos.left;
+        }
+        if(data.bottomUrl) {
+            const bottomInput = document.getElementById('bottom-url-input');
+            bottomInput.value = data.bottomUrl;
+            updateBottomQR(bottomInput); // تحديث الباركود والزر السفلي
+        }
+        alert('تم العثور على بيانات واسترجاعها بنجاح.');
+    }
+
+    function resetData() {
+        if(confirm('هل أنت متأكد؟ سيتم حذف جميع البيانات المحفوظة والبدء من جديد.')) {
+            localStorage.removeItem('schoolFormData_v4');
+            localStorage.removeItem('schoolFormData_v3');
+            localStorage.removeItem('schoolFormData_v2');
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>

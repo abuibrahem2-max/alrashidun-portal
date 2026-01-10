@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>بوابة الراشدون</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-color: #2563eb; --bg-gradient-start: #f8fafc; --bg-gradient-end: #e2e8f0; --active-nav: #2563eb; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .app-container { display: flex; flex-direction: column; height: 100vh; }
+        .main-view { flex: 1; position: relative; width: 100%; height: 100%; }
+        iframe { width: 100%; height: 100%; border: none; display: block; background: #fff; }
+        
+        #home-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%); overflow-y: auto; padding: 20px; z-index: 50; display: flex; flex-direction: column; align-items: center; }
+        .home-header { margin-top: 35px; margin-bottom: 20px; text-align: center; width: 100%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary-color); }
+        .home-header h2 { color: #0f172a; margin: 0; font-size: 1.3rem; font-weight: 800; }
+        .home-header p { color: #64748b; margin: 5px 0 0; font-size: 0.8rem; }
+        .hijri-date { margin-top: 10px; font-size: 0.9rem; color: var(--primary-color); font-weight: bold; background: #f1f5f9; padding: 5px 15px; border-radius: 20px; display: inline-block; }
+        
+        .quick-note-area { width: 100%; max-width: 420px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .quick-note-title { font-size: 0.85rem; font-weight: bold; color: #b45309; margin-bottom: 5px; }
+        .quick-note-input { width: 100%; border: none; background: transparent; resize: none; font-family: inherit; font-size: 0.9rem; color: #4b5563; outline: none; min-height: 60px; }
+        
+        .section-title { width: 100%; max-width: 420px; text-align: right; font-size: 0.95rem; color: #334155; font-weight: 700; margin: 15px 0 10px 0; border-right: 4px solid var(--primary-color); padding-right: 10px; }
+        .apps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 100%; max-width: 420px; padding-bottom: 10px; }
+        .app-icon { background: white; border-radius: 16px; padding: 15px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s; height: 100px; position: relative; overflow: hidden; border: 1px solid #f1f5f9; }
+        .app-icon:active { transform: scale(0.95); background: #f8fafc; }
+        .app-icon i { font-size: 2rem; margin-bottom: 10px; }
+        .app-icon span { font-size: 0.7rem; font-weight: 700; color: #475569; text-align: center; line-height: 1.3; }
+        .c-blue i { color: #2563eb; } .c-teal i { color: #0d9488; } .c-purple i { color: #7c3aed; } .c-orange i { color: #d97706; } .c-red i { color: #dc2626; } .c-pink i { color: #db2777; } .c-gray i { color: #64748b; }
+        
+        .designer-credit { margin-top: 30px; margin-bottom: 80px; text-align: center; color: #94a3b8; font-size: 0.8rem; border-top: 1px solid #e2e8f0; padding-top: 15px; width: 80%; }
+        .designer-credit span { display: block; font-weight: bold; color: var(--primary-color); margin-top: 5px; font-size: 0.9rem; }
+        
+        .bottom-nav { height: 65px; background: white; border-top: 1px solid #e2e8f0; display: flex; overflow-x: auto; white-space: nowrap; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); z-index: 100; }
+        .bottom-nav::-webkit-scrollbar { display: none; }
+        .nav-item { flex: 0 0 auto; width: 70px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; background: none; border: none; cursor: pointer; }
+        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
+        .nav-item span { font-size: 0.65rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; max-width: 65px; }
+        .nav-item.active { color: var(--active-nav); font-weight: bold; }
+        .nav-home { color: #334155; border-left: 1px solid #f1f5f9; min-width: 75px; }
+        
+        .settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; display: none; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .settings-content { background: white; width: 95%; max-width: 450px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .settings-section { margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
+        .settings-section h4 { margin: 0 0 10px 0; color: #334155; font-size: 1rem; border-right: 3px solid var(--primary-color); padding-right: 8px; }
+        .form-group { margin-bottom: 10px; }
+        .form-input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; }
+        .btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: #ef4444; color: white; font-size: 0.8rem; width: auto; padding: 5px 10px; }
+        .btn-move { background: #e2e8f0; color: #334155; width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; }
+        
+        /* ألوان */
+        .color-options { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .color-btn { width: 35px; height: 35px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+        .color-btn.selected { border-color: #334155; transform: scale(1.1); }
+        .bg-blue { background: #2563eb; } .bg-green { background: #16a34a; } .bg-purple { background: #7c3aed; } .bg-red { background: #dc2626; } .bg-dark { background: #1e293b; }
+
+        .sortable-item { display: flex; flex-direction: column; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        .sortable-row-top { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
+        .sortable-controls { display: flex; align-items: center; }
+        .sortable-name-input { flex-grow: 1; margin-left: 10px; border: none; background: transparent; font-weight: bold; color: #334155; outline: none; border-bottom: 1px dashed #cbd5e1; }
+        .sortable-options { display: flex; align-items: center; font-size: 0.8rem; color: #64748b; }
+        .custom-link-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px; border-radius: 6px; margin-bottom: 5px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <main class="main-view">
+            <div id="home-screen">
+                <div class="home-header">
+                    <h2 id="app-title-display">بوابة الراشدون الرقمية</h2>
+                    <p id="app-subtitle-display">منظومة الإدارة والإشراف المتكاملة</p>
+                    <div id="hijri-date-display" class="hijri-date">...</div>
+                </div>
+
+                <div class="quick-note-area">
+                    <div class="quick-note-title"> <i class="fas fa-sticky-note"></i> مفكرة سريعة </div>
+                    <textarea id="quick-note-input" class="quick-note-input" placeholder="اكتب ملاحظاتك العاجلة هنا..."></textarea>
+                </div>
+                
+                <div class="section-title">الأدوات والمنصات</div>
+                <div class="apps-grid" id="main-tools-grid"></div>
+
+                <div class="section-title" id="custom-links-title" style="display:none;">روابط ومصادر إضافية</div>
+                <div class="apps-grid" id="custom-links-container"></div>
+
+                <div class="designer-credit">
+                    <i class="fas fa-code"></i> تصميم وتطوير
+                    <span id="designer-name-display">أ. علي إبراهيم عسيري</span>
+                </div>
+            </div>
+            <iframe id="content-frame" name="app-frame" sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"></iframe>
+        </main>
+
+        <nav class="bottom-nav" id="bottom-nav-container">
+            </nav>
+    </div>
+
+    <div id="settings-modal" class="settings-modal">
+        <div class="settings-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <h3 style="margin:0;">الإعدادات</h3>
+                <button onclick="closeSettings()" style="background:none; border:none; font-size:1.5rem;">&times;</button>
+            </div>
+            
+            <div class="settings-section">
+                <h4>🎨 المظهر</h4>
+                <div class="form-group"><input type="text" id="settings-title" class="form-input" placeholder="العنوان"></div>
+                <div class="form-group"><input type="text" id="settings-designer" class="form-input" placeholder="المصمم"></div>
+                <div class="color-options">
+                    <div class="color-btn bg-blue" onclick="selectColor('#2563eb', this)"></div>
+                    <div class="color-btn bg-green" onclick="selectColor('#16a34a', this)"></div>
+                    <div class="color-btn bg-purple" onclick="selectColor('#7c3aed', this)"></div>
+                    <div class="color-btn bg-red" onclick="selectColor('#dc2626', this)"></div>
+                    <div class="color-btn bg-dark" onclick="selectColor('#1e293b', this)"></div>
+                </div>
+                <button class="btn btn-primary" onclick="saveAppearanceSettings()">حفظ المظهر</button>
+            </div>
+
+            <div class="settings-section">
+                <h4>🔃 الترتيب والشريط السفلي</h4>
+                <p style="font-size:0.8rem; color:#64748b;">(صح) = إظهار في الشريط السفلي</p>
+                <div id="tools-sort-list"></div>
+                <button class="btn btn-primary" onclick="saveToolsSettings()">حفظ التغييرات</button>
+                <button class="btn btn-danger" onclick="resetToolsToDefault()">استعادة الافتراضي</button>
+            </div>
+
+            <div class="settings-section">
+                <h4>🔗 إضافة رابط</h4>
+                <div class="form-group"><input type="text" id="new-link-title" class="form-input" placeholder="الاسم"></div>
+                <div class="form-group"><input type="url" id="new-link-url" class="form-input" placeholder="الرابط"></div>
+                <button class="btn btn-success" onclick="addNewLink()">+ إضافة</button>
+                <div style="margin-top:15px;" id="settings-links-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // المتغيرات والمفتاح الجديد للذاكرة لضمان بداية نظيفة
+        const STORAGE_KEY_TOOLS = 'myApp_data_v3_clean'; 
+        const STORAGE_KEY_GENERAL = 'myApp_general_v3_clean';
+        const STORAGE_KEY_LINKS = 'myApp_links_v3_clean';
+
+        const homeScreen = document.getElementById('home-screen');
+        const frame = document.getElementById('content-frame');
+        const settingsModal = document.getElementById('settings-modal');
+        const noteInput = document.getElementById('quick-note-input');
+        let currentThemeColor = '#2563eb';
+        let customLinks = [];
+
+        // القائمة الافتراضية الثابتة
+        const defaultTools = [
+            { id: 'platform', title: 'المنصة المدرسية', icon: 'fa-laptop-house', color: 'c-blue', url: 'https://abuibrahem2-max.github.io/my-school-site/', external: false, inBottomBar: true },
+            { id: 'monitor', title: 'رصد استراتيجية', icon: 'fa-pen-to-square', color: 'c-teal', url: 'https://abuibrahem2-max.github.io/school-reports/index.html', external: false, inBottomBar: true },
+            { id: 'archive', title: 'أرشيف التقارير', icon: 'fa-chart-pie', color: 'c-teal', url: 'https://abuibrahem2-max.github.io/school-reports/index-view.html', external: false, inBottomBar: false },
+            { id: 'nafes', title: 'منصة نافس', icon: 'fa-graduation-cap', color: 'c-red', url: 'https://abuibrahem2-max.github.io/nafes/', external: false, inBottomBar: false },
+            { id: 'health', title: 'التوجيه الصحي', icon: 'fa-heartbeat', color: 'c-pink', url: 'https://sites.google.com/view/ali-aseri/%D8%A7%D9%84%D8%B5%D9%81%D8%AD%D8%A9-%D8%A7%D9%84%D8%B1%D8%A6%D9%8A%D8%B3%D9%8A%D8%A9', external: true, inBottomBar: false },
+            { id: 'operational', title: 'الخطة التشغيلية', icon: 'fa-tasks', color: 'c-purple', url: 'operational.html', external: false, inBottomBar: false },
+            { id: 'followup', title: 'المتابعة', icon: 'fa-clipboard-check', color: 'c-green', url: 'followup.html', external: false, inBottomBar: true },
+            { id: 'manager', title: 'الإدارة', icon: 'fa-user-tie', color: 'c-orange', url: 'manager.html', external: false, inBottomBar: false },
+            { id: 'plans', title: 'طباعة الخطط', icon: 'fa-print', color: 'c-blue', url: 'plans.html', external: false, inBottomBar: false },
+            { id: 'meetings', title: 'المحاضر', icon: 'fa-users', color: 'c-purple', url: 'meetings.html', external: false, inBottomBar: false },
+            { id: 'courses', title: 'الدورات', icon: 'fa-chalkboard-teacher', color: 'c-green', url: 'courses.html', external: false, inBottomBar: false },
+            { id: 'devplan', title: 'التطوير المهني', icon: 'fa-chart-line', color: 'c-orange', url: 'dev_plan.html', external: false, inBottomBar: false },
+            { id: 'reports', title: 'صانع التقارير', icon: 'fa-file-contract', color: 'c-blue', url: 'reports.html', external: false, inBottomBar: false },
+        ];
+
+        let currentTools = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // تحميل البيانات بصمت
+            loadGeneralSettings();
+            loadTools();
+            loadCustomLinks();
+            updateHijriDate();
+            loadNote();
+        });
+
+        function loadTools() {
+            const savedTools = localStorage.getItem(STORAGE_KEY_TOOLS);
+            if (savedTools) {
+                try {
+                    currentTools = JSON.parse(savedTools);
+                    // التحقق من صحة البيانات
+                    if(!Array.isArray(currentTools) || currentTools.length === 0) {
+                        throw new Error("بيانات تالفة");
+                    }
+                } catch(e) {
+                    // في حال الخطأ نعود للافتراضي بصمت
+                    currentTools = JSON.parse(JSON.stringify(defaultTools));
+                    localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(currentTools));
+                }
+            } else {
+                // أول مرة تشغيل
+                currentTools = JSON.parse(JSON.stringify(defaultTools));
+                localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(currentTools));
+            }
+            renderMainGrid();
+            renderBottomNav();
+        }
+
+        function renderMainGrid() {
+            const grid = document.getElementById('main-tools-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            currentTools.forEach(tool => {
+                const div = document.createElement('div');
+                div.className = `app-icon ${tool.color}`;
+                div.onclick = function() { loadPage(tool.url, this, tool.external); };
+                div.innerHTML = `<i class="fas ${tool.icon}"></i><span>${tool.title}</span>`;
+                grid.appendChild(div);
+            });
+        }
+
+        function renderBottomNav() {
+            const nav = document.getElementById('bottom-nav-container');
+            if(!nav) return;
+            let html = `
+                <button class="nav-item" onclick="openSettings()">
+                    <i class="fas fa-cog"></i><span>الإعدادات</span>
+                </button>
+                <button class="nav-item nav-home active" onclick="goHome()">
+                    <i class="fas fa-th-large"></i><span>الرئيسية</span>
+                </button>
+            `;
+            currentTools.forEach(tool => {
+                if(tool.inBottomBar) {
+                    html += `
+                    <button class="nav-item" onclick="loadPage('${tool.url}', this, ${tool.external})">
+                        <i class="fas ${tool.icon}"></i><span>${tool.title}</span>
+                    </button>`;
+                }
+            });
+            nav.innerHTML = html;
+        }
+
+        function openSettings() {
+            // تعبئة البيانات في النافذة
+            const titleEl = document.getElementById('app-title-display');
+            const designerEl = document.getElementById('designer-name-display');
+            
+            document.getElementById('settings-title').value = titleEl ? titleEl.innerText : '';
+            document.getElementById('settings-designer').value = designerEl ? designerEl.innerText : '';
+            
+            renderToolsSortList();
+            renderSettingsLinksList();
+            settingsModal.style.display = 'flex';
+        }
+
+        function renderToolsSortList() {
+            const list = document.getElementById('tools-sort-list');
+            if(!list) return;
+            list.innerHTML = '';
+            currentTools.forEach((tool, index) => {
+                list.innerHTML += `
+                    <div class="sortable-item">
+                        <div class="sortable-row-top">
+                            <input type="text" class="sortable-name-input" id="tool-name-${index}" value="${tool.title}">
+                            <div class="sortable-controls">
+                                <button class="btn btn-move" onclick="moveTool(${index}, -1)">⬆️</button>
+                                <button class="btn btn-move" onclick="moveTool(${index}, 1)">⬇️</button>
+                            </div>
+                        </div>
+                        <div class="sortable-options">
+                            <label style="display:flex; align-items:center; cursor:pointer;">
+                                <input type="checkbox" id="tool-nav-${index}" ${tool.inBottomBar ? 'checked' : ''} style="width:18px; height:18px; margin-left:8px;">
+                                إظهار في الشريط السفلي
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function moveTool(index, direction) {
+            saveTempToolState();
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < currentTools.length) {
+                const temp = currentTools[newIndex];
+                currentTools[newIndex] = currentTools[index];
+                currentTools[index] = temp;
+                renderToolsSortList();
+            }
+        }
+
+        function saveTempToolState() {
+            currentTools.forEach((tool, index) => {
+                const nameInput = document.getElementById(`tool-name-${index}`);
+                const navCheck = document.getElementById(`tool-nav-${index}`);
+                if(nameInput) tool.title = nameInput.value;
+                if(navCheck) tool.inBottomBar = navCheck.checked;
+            });
+        }
+
+        function saveToolsSettings() {
+            saveTempToolState();
+            localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(currentTools));
+            renderMainGrid();
+            renderBottomNav();
+            alert('تم الحفظ بنجاح!');
+        }
+
+        function resetToolsToDefault() {
+            if(confirm("هل تريد استعادة الترتيب الافتراضي؟")) {
+                currentTools = JSON.parse(JSON.stringify(defaultTools));
+                localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(currentTools));
+                renderMainGrid();
+                renderBottomNav();
+                renderToolsSortList();
+            }
+        }
+
+        // --- باقي الوظائف (المظهر، الروابط، الخ) ---
+        function closeSettings() { settingsModal.style.display = 'none'; }
+        function goHome() {
+            homeScreen.style.display = 'flex';
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.nav-home').classList.add('active');
+        }
+        function loadPage(url, element, isExternal = false) {
+            if (isExternal) { window.open(url, '_blank'); return; }
+            homeScreen.style.display = 'none';
+            if (frame.src !== url) { frame.src = url; }
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            if (element && element.classList.contains('nav-item')) { element.classList.add('active'); }
+        }
+        function selectColor(color, btn) {
+            currentThemeColor = color;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+        function saveAppearanceSettings() {
+            const settings = {
+                title: document.getElementById('settings-title').value,
+                designer: document.getElementById('settings-designer').value,
+                theme: currentThemeColor
+            };
+            localStorage.setItem(STORAGE_KEY_GENERAL, JSON.stringify(settings));
+            applyGeneralSettings(settings);
+            alert('تم حفظ المظهر!');
+        }
+        function applyGeneralSettings(settings) {
+            if(settings.title) document.getElementById('app-title-display').innerText = settings.title;
+            if(settings.designer) document.getElementById('designer-name-display').innerText = settings.designer;
+            if(settings.theme) {
+                currentThemeColor = settings.theme;
+                document.documentElement.style.setProperty('--primary-color', settings.theme);
+                document.documentElement.style.setProperty('--active-nav', settings.theme);
+            }
+        }
+        function loadGeneralSettings() {
+            const savedData = localStorage.getItem(STORAGE_KEY_GENERAL);
+            if (savedData) applyGeneralSettings(JSON.parse(savedData));
+        }
+        function addNewLink() {
+            const title = document.getElementById('new-link-title').value;
+            const url = document.getElementById('new-link-url').value;
+            if(!title || !url) return alert('أكمل البيانات');
+            customLinks.push({ title, url });
+            localStorage.setItem(STORAGE_KEY_LINKS, JSON.stringify(customLinks));
+            renderCustomLinks();
+            renderSettingsLinksList();
+            document.getElementById('new-link-title').value = '';
+            document.getElementById('new-link-url').value = '';
+        }
+        function deleteLink(index) {
+            if(confirm('حذف؟')) {
+                customLinks.splice(index, 1);
+                localStorage.setItem(STORAGE_KEY_LINKS, JSON.stringify(customLinks));
+                renderCustomLinks();
+                renderSettingsLinksList();
+            }
+        }
+        function loadCustomLinks() {
+            const saved = localStorage.getItem(STORAGE_KEY_LINKS);
+            if(saved) customLinks = JSON.parse(saved);
+            renderCustomLinks();
+        }
+        function renderCustomLinks() {
+            const container = document.getElementById('custom-links-container');
+            const title = document.getElementById('custom-links-title');
+            if(!container) return;
+            container.innerHTML = '';
+            if(customLinks.length > 0) {
+                title.style.display = 'block';
+                customLinks.forEach(link => {
+                    const div = document.createElement('div');
+                    div.className = 'app-icon c-gray';
+                    div.onclick = function() { loadPage(link.url, this, true); };
+                    div.innerHTML = `<i class="fas fa-link"></i><span>${link.title}</span>`;
+                    container.appendChild(div);
+                });
+            } else { title.style.display = 'none'; }
+        }
+        function renderSettingsLinksList() {
+            const list = document.getElementById('settings-links-list');
+            if(!list) return;
+            list.innerHTML = '';
+            customLinks.forEach((link, index) => {
+                list.innerHTML += `<div class="custom-link-item"><span>${link.title}</span><button class="btn btn-danger" onclick="deleteLink(${index})">حذف</button></div>`;
+            });
+        }
+        function updateHijriDate() {
+            const date = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'islamic-umalqura' };
+            try { document.getElementById('hijri-date-display').innerText = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', options).format(date); } catch(e) {}
+        }
+        function loadNote() {
+            const savedNote = localStorage.getItem('myApp_quickNote');
+            if (savedNote && noteInput) noteInput.value = savedNote;
+        }
+        if(noteInput) noteInput.addEventListener('input', () => { localStorage.setItem('myApp_quickNote', noteInput.value); });
+    </script>
+</body>
+</html>

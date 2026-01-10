@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة الخطط المدرسية - V8 (بيانات كاملة)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0E7557; --gold: #C5A47E; --text-dark: #1f2937;
+            --st-green: #10b981; --st-blue: #3b82f6; --st-red: #ef4444;
+        }
+        body { font-family: 'Tajawal', sans-serif; background-color: #e2e8f0; margin: 0; padding: 20px; color: var(--text-dark); }
+
+        /* --- أدوات التحكم --- */
+        .controls-area {
+            background: white; padding: 15px; border-radius: 16px; margin-bottom: 25px;
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .btn {
+            padding: 8px 16px; border-radius: 8px; border: none; font-weight: 800; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; font-family: 'Tajawal'; font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-print { background: #334155; color: white; }
+        .btn-save { background: #059669; color: white; }
+        .btn-load { background: #d97706; color: white; }
+        .btn-reset { background: #fee2e2; color: #dc2626; margin-right: auto; }
+        .msg-box { font-size: 0.8rem; font-weight: bold; padding: 5px 10px; border-radius: 4px; opacity:0; transition: opacity 0.5s; background: #dcfce7; color: #166534; }
+
+        /* --- أزرار التعديل الديناميكي --- */
+        .ctrl-btn {
+            background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569;
+            width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: inline-flex;
+            align-items: center; justify-content: center; font-size: 0.7rem; margin: 0 1px;
+        }
+        .ctrl-btn:hover { background: #e2e8f0; color: #000; }
+        .ctrl-del { color: #ef4444; border-color: #fecaca; background: #fef2f2; }
+        .ctrl-del:hover { background: #dc2626; color: white; }
+        
+        .add-row-btn {
+            width: 100%; background: #f0fdf4; border: 2px dashed #86efac; color: #166534;
+            padding: 5px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; font-size: 0.8rem;
+        }
+        .add-row-btn:hover { background: #dcfce7; }
+
+        .add-domain-btn {
+            width: 100%; background: #eff6ff; border: 2px dashed #93c5fd; color: #1e40af;
+            padding: 15px; border-radius: 10px; font-weight: 800; cursor: pointer; margin-top: 20px;
+            font-size: 1rem;
+        }
+        .add-domain-btn:hover { background: #dbeafe; }
+
+        .del-domain-btn {
+            float: left; background: #fee2e2; color: #991b1b; padding: 2px 8px; font-size: 0.7rem;
+            border-radius: 4px; border: 1px solid #fca5a5; cursor: pointer; margin-top: -3px;
+        }
+
+        /* --- التبويبات --- */
+        .tabs-wrapper { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; }
+        .tab-btn {
+            padding: 10px 30px; background: #cbd5e1; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: 800; color: #475569; cursor: pointer; transition: 0.3s;
+        }
+        .tab-btn.active { background: var(--primary); color: white; transform: scale(1.05); }
+
+        /* --- الورقة --- */
+        .paper-sheet {
+            background: white; margin: 0 auto; min-height: 297mm; width: 210mm;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column;
+            transition: width 0.3s;
+        }
+
+        /* --- الغلاف --- */
+        .cover-page {
+            position: relative; height: 296mm; width: 100%; display: flex; flex-direction: column;
+            page-break-after: always; overflow: hidden; box-sizing: border-box;
+        }
+        .cover-top-bar { height: 12px; background: linear-gradient(90deg, var(--primary), var(--gold), var(--primary)); flex-shrink: 0; }
+        .cover-content { flex: 1; padding: 30px 40px; display: flex; flex-direction: column; justify-content: space-between; z-index: 2; }
+        .bg-decor { position: absolute; border-radius: 50%; opacity: 0.05; z-index: 1; pointer-events: none; }
+        .bd-1 { width: 350px; height: 350px; background: var(--primary); top: -80px; left: -80px; }
+        .bd-2 { width: 250px; height: 250px; background: var(--gold); bottom: -40px; right: -40px; }
+
+        .cover-header { display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0; }
+        .cover-text h2 { margin: 3px 0; font-size: 1rem; color: #64748b; text-align: center; outline: none; }
+        
+        .logo-upload {
+            width: 100px; height: 100px; border: 2px dashed #cbd5e1; border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; background: rgba(255,255,255,0.9); transition: 0.2s;
+        }
+        .logo-upload:hover { border-color: var(--primary); background: #f0fdf4; }
+        .logo-upload img { width: 100%; height: 100%; object-fit: contain; }
+        .logo-hint { font-size: 0.65rem; color: #94a3b8; margin-top: 5px; }
+
+        .title-card {
+            background: rgba(255,255,255,0.95); border: 1px solid #e2e8f0; border-radius: 20px;
+            padding: 30px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+            width: 80%; align-self: center; margin: 20px 0;
+        }
+        .main-t { font-size: 2.5rem; font-weight: 900; color: var(--primary); margin: 0; outline: none; line-height: 1.2; }
+        .sub-t { font-size: 1.3rem; color: #475569; margin: 8px 0 15px; font-weight: 700; outline: none; }
+        .year-pill { 
+            background: #fff7ed; color: #c2410c; padding: 5px 20px; border-radius: 50px; 
+            font-weight: 800; font-size: 1.1rem; border: 1px solid #fdba74; outline: none; display: inline-block;
+        }
+
+        .cover-footer { border-top: 3px double var(--gold); padding-top: 15px; display: flex; justify-content: space-between; flex-shrink: 0; margin-bottom: 10px; }
+        .sig-role { font-size: 0.9rem; color: #94a3b8; font-weight: bold; margin-bottom: 5px; outline: none; }
+        .sig-name { font-size: 1.1rem; font-weight: 900; color: var(--text-dark); outline: none; }
+
+        /* --- المحتوى الداخلي --- */
+        .inner-page { padding: 10mm; display: none; background: white; min-height: 297mm; }
+        .inner-page.active { display: block; }
+        
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px double var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
+        .s-logo { height: 55px; width: auto; }
+
+        .section-block { margin-bottom: 25px; page-break-inside: avoid; border: 1px solid transparent; transition: 0.2s; }
+        .section-block:hover { border-color: #e2e8f0; border-radius: 8px; padding: 5px; }
+
+        .domain-strip {
+            background: var(--primary); color: white; padding: 8px 15px; border-radius: 6px;
+            font-weight: 800; font-size: 1rem; margin-bottom: 8px; outline: none;
+        }
+        .goal-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+        .goal-txt { font-size: 0.85rem; margin-bottom: 3px; color: #166534; outline: none; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 5px; }
+        th, td { border: 1px solid #e2e8f0; padding: 6px; vertical-align: middle; }
+        th { background: #f8fafc; color: #334155; font-weight: 800; }
+        td { outline: none; }
+        td:focus { background: #fffbeb; }
+
+        .st-btn {
+            width: 100%; padding: 5px; border-radius: 4px; border: none; font-family: 'Tajawal';
+            font-weight: 800; font-size: 0.75rem; cursor: pointer; color: white; transition: 0.1s;
+        }
+        .st-btn:active { transform: scale(0.95); }
+        .s-0 { background: var(--st-red); } .s-1 { background: var(--st-green); } .s-2 { background: var(--st-blue); }
+
+        .evi-box {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; min-height: 45px; transition: 0.2s;
+        }
+        .evi-box:hover { background: #f1f5f9; }
+        .evi-hint { font-size: 0.65rem; color: #cbd5e1; border: 1px dashed #cbd5e1; padding: 2px 5px; border-radius: 3px; }
+        .evi-link { font-size: 0.65rem; color: var(--st-blue); text-decoration: underline; font-weight: bold; }
+
+        /* إعدادات الطباعة */
+        @media print {
+            @page { margin: 0; }
+            body { background: white; padding: 0; }
+            .controls-area, .tabs-wrapper, .add-row-btn, .add-domain-btn, .ctrl-col, .del-domain-btn { display: none !important; }
+            .paper-sheet { box-shadow: none; margin: 0; width: 100% !important; }
+            .inner-page { display: none !important; }
+            .inner-page.active { display: block !important; }
+            .section-block { border: none !important; padding: 0 !important; }
+            .cover-page { display: flex !important; height: 100vh !important; max-height: 297mm; page-break-after: always; }
+            .logo-upload { border: none; background: transparent; } 
+            .logo-hint { display: none; }
+            
+            .domain-strip { background: var(--primary) !important; color: white !important; -webkit-print-color-adjust: exact; }
+            .goal-box { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; }
+            .s-0 { background: var(--st-red) !important; -webkit-print-color-adjust: exact; }
+            .s-1 { background: var(--st-green) !important; -webkit-print-color-adjust: exact; }
+            .s-2 { background: var(--st-blue) !important; -webkit-print-color-adjust: exact; }
+        }
+        
+        .mode-landscape .paper-sheet { width: 297mm; } 
+        .mode-landscape .cover-page { height: 209mm; }
+        .mode-landscape .cover-content { padding: 20px 50px; }
+        .mode-landscape .title-card { width: 60%; padding: 20px; }
+        .mode-portrait .paper-sheet { width: 210mm; }
+    </style>
+    <style id="print-css">@page { size: A4 portrait; }</style>
+</head>
+<body class="mode-portrait">
+
+    <div class="controls-area">
+        <h3 style="margin:0 0 0 10px; color:var(--primary)">🎛️</h3>
+        <button class="btn btn-save" onclick="downloadBackup()">💾 حفظ (Backup)</button>
+        <button class="btn btn-load" onclick="document.getElementById('restore-file').click()">📂 استعادة</button>
+        <input type="file" id="restore-file" hidden accept=".json" onchange="restoreBackup(event)">
+        <div style="width:1px; height:25px; background:#cbd5e1; margin:0 5px;"></div>
+        <button class="btn btn-print" onclick="setMode('portrait')">📄 عمودي</button>
+        <button class="btn btn-print" onclick="setMode('landscape')">📄 أفقي</button>
+        <span id="auto-save-msg" class="msg-box">تم الحفظ تلقائياً ✓</span>
+        <button class="btn btn-reset" onclick="resetAll()">🗑️ تصفير</button>
+    </div>
+
+    <div class="tabs-wrapper">
+        <button class="tab-btn active" onclick="switchTab('op')" id="btn-op">📘 الخطة التشغيلية</button>
+        <button class="tab-btn" onclick="switchTab('imp')" id="btn-imp">📈 خطة التحسين</button>
+    </div>
+
+    <div class="paper-sheet">
+        <div class="cover-page">
+            <div class="cover-top-bar"></div>
+            <div class="bg-decor bd-1"></div><div class="bg-decor bd-2"></div>
+            
+            <div class="cover-content">
+                <div class="cover-header">
+                    <div class="logo-upload" onclick="document.getElementById('f-r').click()">
+                        <img id="img-r" style="display:none"><span class="logo-hint" id="hint-r">شعار الوزارة</span>
+                        <input type="file" id="f-r" hidden accept="image/*" onchange="upLogo(event, 'r')">
+                    </div>
+                    <div class="cover-text" style="text-align:center">
+                        <h2 contenteditable="true" oninput="svTxt('h1',this.innerText)">المملكة العربية السعودية</h2>
+                        <h2 contenteditable="true" oninput="svTxt('h2',this.innerText)">وزارة التعليم</h2>
+                        <h2 contenteditable="true" oninput="svTxt('h3',this.innerText)">الإدارة العامة للتعليم بمنطقة عسير</h2>
+                        <h2 contenteditable="true" oninput="svTxt('h4',this.innerText)">ابتدائية ومتوسطة الراشدون بالمربع</h2>
+                    </div>
+                    <div class="logo-upload" onclick="document.getElementById('f-l').click()">
+                        <img id="img-l" style="display:none"><span class="logo-hint" id="hint-l">شعار الرؤية</span>
+                        <input type="file" id="f-l" hidden accept="image/*" onchange="upLogo(event, 'l')">
+                    </div>
+                </div>
+
+                <div class="title-card">
+                    <h1 class="main-t" id="cover-main-title" contenteditable="true" oninput="svTxt('mt',this.innerText)">متابعة الخطة التشغيلية</h1>
+                    <div class="sub-t" contenteditable="true" oninput="svTxt('st',this.innerText)">للعام الدراسي</div>
+                    <div class="year-pill" contenteditable="true" oninput="svTxt('yr',this.innerText)">1447هـ</div>
+                </div>
+
+                <div class="cover-footer">
+                    <div style="text-align:center">
+                        <div class="sig-role" contenteditable="true" oninput="svTxt('sr1',this.innerText)">معد الخطة</div>
+                        <div class="sig-name" contenteditable="true" oninput="svTxt('sn1',this.innerText)">لجنة التميز بالمدرسة</div>
+                    </div>
+                    <div style="text-align:center">
+                        <div class="sig-role" contenteditable="true" oninput="svTxt('sr2',this.innerText)">مدير المدرسة</div>
+                        <div class="sig-name" contenteditable="true" oninput="svTxt('sn2',this.innerText)">أحمد سالم الشهري</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-op" class="inner-page active">
+            <div class="page-header">
+                <img id="head-img-r" class="s-logo">
+                <div style="text-align:center">
+                    <h3 style="color:var(--primary); margin:0;">تفاصيل البرامج والمؤشرات (الخطة التشغيلية)</h3>
+                    <small style="color:gray">العام الدراسي 1447هـ</small>
+                </div>
+                <img id="head-img-l" class="s-logo">
+            </div>
+            <div id="cont-op"></div>
+            <button class="add-domain-btn" onclick="addNewDomain('op')">+ إضافة مجال جديد</button>
+        </div>
+
+        <div id="page-imp" class="inner-page">
+            <div class="page-header">
+                <img id="imp-img-r" class="s-logo">
+                <div style="text-align:center">
+                    <h3 style="color:var(--primary); margin:0;">خطة التحسين (الممارسات الإشرافية)</h3>
+                    <small style="color:gray">العام الدراسي 1447هـ</small>
+                </div>
+                <img id="imp-img-l" class="s-logo">
+            </div>
+            <div id="cont-imp"></div>
+            <button class="add-domain-btn" onclick="addNewDomain('imp')">+ إضافة مجال جديد</button>
+        </div>
+    </div>
+
+<script>
+    // --- البيانات الأصلية الكاملة (تمت إعادتها) ---
+    const defOp = [
+        {
+            domain: "المجال الأول: الإدارة المدرسية",
+            general: "الهدف العام: تعزيز القيم والانتماء الوطني",
+            detailed: "الهدف التفصيلي: تعزيز القيم الإسلامية والهوية الوطنية بنسبة 5%",
+            progs: [
+                {n:"إقامة برامج اليوم الوطني 95", t:"الأول", r:"رائد النشاط", k:"نسبة المشاركة"},
+                {n:"إقامة برامج يوم التأسيس", t:"الثاني", r:"رائد النشاط", k:"تفاعل الطلاب"},
+                {n:"تعزيز السلوك الإيجابي", t:"مستمر", r:"الموجه الطلابي", k:"عدد البرامج"},
+                {n:"التسامح", t:"الثاني", r:"الموجه الطلابي", k:"أثر السلوك"},
+                {n:"الانتماء", t:"الثاني", r:"رائد النشاط", k:"عدد البرامج"},
+                {n:"تفعيل الأنشطة الواردة في الخطة", t:"مستمر", r:"رائد النشاط", k:"التقارير"}
+            ]
+        },
+        {
+            domain: "المجال الأول: الإدارة المدرسية",
+            general: "الهدف العام: تنمية وتطوير قدرات الكوادر التعليمية",
+            detailed: "الهدف التفصيلي: نشر ثقافة الجودة والتميز بنسبة 5%",
+            progs: [
+                {n:"تشكيل مجلس الجودة بالمدرسة", t:"الأول", r:"مدير المدرسة", k:"قرار التشكيل"},
+                {n:"عقد اجتماعات مجلس الجودة", t:"فصليا", r:"المدير/المنسق", k:"المحاضر"},
+                {n:"عمل قروب واتس اب للمجموعة", t:"الأول", r:"منسق الجودة", k:"التفاعل"},
+                {n:"تطوير الخطة التشغيلية وتقييمها فصلياً", t:"فصليا", r:"مجلس الجودة", k:"نسبة الإنجاز"},
+                {n:"حث الكادر الإداري على التطوير المهني", t:"مستمر", r:"مدير المدرسة", k:"عدد المشاركين"},
+                {n:"تشجيع المعلمين على الرخصة المهنية", t:"مستمر", r:"مدير المدرسة", k:"نسبة الحاصلين"}
+            ]
+        },
+        {
+            domain: "المجال الثاني: التعليم والتعلم",
+            general: "الهدف العام: رفع جودة العملية التعليمية",
+            detailed: "الهدف التفصيلي: دمج التكنولوجيا في العملية التعليمية بنسبة 10%",
+            progs: [
+                {n:"صيانة شاشات الفصول", t:"الأول", r:"مدير المدرسة", k:"عدد الشاشات"},
+                {n:"تجهيز معمل الحاسب الآلي", t:"الأول", r:"معلم الحاسب", k:"الجاهزية"},
+                {n:"تركيب وصلات للإنترنت", t:"الأول", r:"منسق الجودة", k:"الفواتير"},
+                {n:"تطوير مصادر التعلم", t:"الثاني", r:"إدارة المدرسة", k:"المخاطبات"}
+            ]
+        },
+        {
+            domain: "المجال الثاني: التعليم والتعلم",
+            general: "الهدف العام: رفع جودة العملية التعليمية",
+            detailed: "الهدف التفصيلي: تطبيق المعلمين لاستراتيجيات التدريس الحديثة بنسبة 10%",
+            progs: [
+                {n:"فيديوهات تدريبية مسجلة", t:"الأول", r:"لجنة التميز", k:"المستفيدين"},
+                {n:"الزيارات الصفية والتقييم", t:"الفصل الثاني", r:"مدير المدرسة", k:"التقارير"},
+                {n:"تبادل الزيارات", t:"الفصل الأول", r:"مجلس الجودة", k:"التقارير"}
+            ]
+        },
+        {
+            domain: "المجال الثاني: التعليم والتعلم",
+            general: "الهدف العام: رفع جودة العملية التعليمية",
+            detailed: "الهدف التفصيلي: تنمية المهارات الرقمية لدى الطلاب بنسبة 20%",
+            progs: [
+                {n:"تفعيل معمل الحاسب", t:"مستمر", r:"معلم الحاسب", k:"عدد الفصول"},
+                {n:"الزيارات الصفية لمصادر التعلم", t:"مستمر", r:"أمين المصادر", k:"السجل"},
+                {n:"أنشطة إلكترونية منزلية", t:"الثاني", r:"معلم الحاسب", k:"الروابط"},
+                {n:"مسابقات إلكترونية", t:"الثاني", r:"معلم الحاسب", k:"المسابقات"},
+                {n:"تفعيل ومتابعة منصة مدرستي", t:"مستمر", r:"المعلمون", k:"المشاركة"}
+            ]
+        },
+        {
+            domain: "المجال الثاني: التعليم والتعلم",
+            general: "الهدف العام: رفع جودة العملية التعليمية",
+            detailed: "الهدف التفصيلي: تلبية احتياجات الطلاب (موهوبين/ذوي إعاقة) 10%",
+            progs: [
+                {n:"عمل مسابقات", t:"الثاني", r:"المعلمون", k:"عدد المسابقات"},
+                {n:"أنشطة بدنية", t:"مستمر", r:"معلم البدنية", k:"المشاركة"},
+                {n:"أنشطة إثرائية للموهوبين", t:"مستمر", r:"المعلمون", k:"ملف الإنجاز"},
+                {n:"توفير ممرات لذوي الإعاقة", t:"الثاني", r:"مدير المدرسة", k:"عدد الممرات"},
+                {n:"توفير موقف خاص لذوي الإعاقة", t:"الثاني", r:"مدير المدرسة", k:"المواقف"},
+                {n:"تفعيل أسبوع الموهبة", t:"الثاني", r:"منسق الموهوبين", k:"التقرير"},
+                {n:"التسجيل في مسابقات موهبة", t:"مستمر", r:"منسق الموهوبين", k:"المسابقات"},
+                {n:"تنمية الدافعية", t:"مستمر", r:"الموجه الطلابي", k:"تقرير"},
+                {n:"تقديم التغذية الراجعة للمتعلمين", t:"مستمر", r:"المعلمون", k:"التقارير"}
+            ]
+        },
+        {
+            domain: "المجال الثاني: التعليم والتعلم",
+            general: "الهدف العام: رفع جودة العملية التعليمية",
+            detailed: "الهدف التفصيلي: تنمية مهارات التفكير العليا لدى المتعلمين 10%",
+            progs: [
+                {n:"حث المعلمين على استراتيجيات التفكير", t:"الأول", r:"مدير المدرسة", k:"المحاضر"},
+                {n:"عمل اختبارات تستهدف مهارات التفكير", t:"مستمر", r:"المعلمون", k:"عدد الاختبارات"}
+            ]
+        },
+        {
+            domain: "المجال الثاني: التعليم والتعلم",
+            general: "الهدف العام: رفع جودة العملية التعليمية",
+            detailed: "الهدف التفصيلي: معالجة مشكلات ذوي صعوبات التعلم بنسبة 5%",
+            progs: [
+                {n:"تحليل نتائج الطلاب", t:"الفصل الأول", r:"لجنة التميز", k:"النتائج"},
+                {n:"حصر الطلاب ذوي صعوبات التعلم", t:"الفصل الأول", r:"المعلمون", k:"الكشوف"},
+                {n:"تخصيص الصفوف الأمامية للضعاف", t:"الفصل الأول", r:"الموجه الطلابي", k:"المستفيدين"}
+            ]
+        },
+        {
+            domain: "المجال الثاني: التعليم والتعلم",
+            general: "الهدف العام: رفع جودة العملية التعليمية",
+            detailed: "الهدف التفصيلي: رفع نسبة وعي الطلاب بمتطلبات سوق العمل 5%",
+            progs: [
+                {n:"زيارات ميدانية للمعاهد والمؤسسات", t:"الأول", r:"رائد النشاط", k:"تقرير"},
+                {n:"منشورات بالتخصصات المطلوبة", t:"الثاني", r:"رائد النشاط", k:"المنشورات"},
+                {n:"التوجيه المهني", t:"الفصل الثاني", r:"الموجه الطلابي", k:"تقرير"}
+            ]
+        },
+        {
+            domain: "المجال الثاني: التعليم والتعلم",
+            general: "الهدف العام: رفع جودة العملية التعليمية",
+            detailed: "الهدف التفصيلي: دعم التطوير المهني لمنسوبي المدرسة 10%",
+            progs: [
+                {n:"تشكيل مجتمعات التعلم المهنية", t:"الأول", r:"مدير المدرسة", k:"السجلات"},
+                {n:"تبادل الزيارات", t:"الثاني", r:"المعلمون", k:"السجلات"},
+                {n:"حصر المعلمين المحتاجين لدورات", t:"الثاني", r:"إدارة المدرسة", k:"تقرير"},
+                {n:"نشر برامج التطوير", t:"مستمر", r:"مدير المدرسة", k:"الرسائل"}
+            ]
+        },
+        {
+            domain: "المجال الثالث: نواتج التعلم",
+            general: "الهدف العام: تحسين مخرجات التعلم",
+            detailed: "الهدف التفصيلي: تطوير أساليب تقويم متنوعة بنسبة 5%",
+            progs: [
+                {n:"اختبارات تشخيصية", t:"الأول", r:"مدير المدرسة", k:"عدد الاختبارات"},
+                {n:"اختبارات تكوينية", t:"الثاني", r:"المعلمون", k:"الأدوات"},
+                {n:"تفعيل ملف الإنجاز", t:"الثاني", r:"المعلمون", k:"الملفات"},
+                {n:"تفعيل التقويم الحقيقي (البديل)", t:"مستمر", r:"المعلمون", k:"المهام"}
+            ]
+        },
+        {
+            domain: "المجال الثالث: نواتج التعلم",
+            general: "الهدف العام: تحسين مخرجات التعلم",
+            detailed: "الهدف التفصيلي: رفع مستوى الطلاب في الاختبارات الوطنية 5%",
+            progs: [
+                {n:"تحليل نتائج الطلاب في الاختبارات الوطنية", t:"الفصل الأول", r:"لجنة التميز", k:"ملف التحليل"},
+                {n:"اختبارات تجريبية محاكية لنافس", t:"الفصل الثاني", r:"المعلمون", k:"عدد الاختبارات"},
+                {n:"تكريم الصف المميز في اختبارات نافس", t:"بداية العام", r:"مدير المدرسة", k:"الشهادة"},
+                {n:"تثقيف أولياء الأمور والطلاب بأهمية الاختبارات", t:"الفصل الثاني", r:"الموجه الطلابي", k:"الرسائل"}
+            ]
+        },
+        {
+            domain: "المجال الرابع: البيئة المدرسية",
+            general: "الهدف العام: توفير بيئة آمنة وجاذبة",
+            detailed: "الهدف التفصيلي: العناية بالنظافة والصيانة الدورية 10%",
+            progs: [
+                {n:"زيادة عدد سلال النفايات", t:"الأول", r:"مدير المدرسة", k:"السلال"},
+                {n:"إزالة الأعشاب الكثيفة", t:"فصليا", r:"مدير المدرسة", k:"عدد المرات"},
+                {n:"متابعة نظافة دورات المياه", t:"يوميا", r:"الموجه الصحي", k:"النظافة"},
+                {n:"متابعة صيانة مراوح الشفط", t:"أسبوعيا", r:"الموجه الصحي", k:"الصيانة"},
+                {n:"متابعة نظافة المقصف المدرسي", t:"يوميا", r:"الموجه الصحي", k:"استمارة"},
+                {n:"متابعة نظافة العيادة المدرسية", t:"يوميا", r:"الموجه الصحي", k:"الجودة"}
+            ]
+        },
+        {
+            domain: "المجال الرابع: البيئة المدرسية",
+            general: "الهدف العام: توفير بيئة آمنة وجاذبة",
+            detailed: "الهدف التفصيلي: تعزيز إجراءات الأمن والسلامة 10%",
+            progs: [
+                {n:"تحديث خطة الإخلاء", t:"سنويا", r:"مدير المدرسة", k:"التحديث"},
+                {n:"الاهتمام بالملاعب", t:"شهريا", r:"إدارة المدرسة", k:"الخطابات"},
+                {n:"متابعة رش المدرسة للوقاية من الحشرات", t:"وقت الحاجة", r:"إدارة المدرسة", k:"التعاقد"},
+                {n:"متابعة تهوية الفصول", t:"يوميا", r:"الموجه الصحي", k:"-"},
+                {n:"تجهيز العيادة المدرسية", t:"بداية العام", r:"الموجه الصحي", k:"التجهيزات"},
+                {n:"صيانة كاميرات المراقبة", t:"بداية العام", r:"مدير المدرسة", k:"الصيانة"}
+            ]
+        },
+        {
+            domain: "المجال الرابع: البيئة المدرسية",
+            general: "الهدف العام: توفير بيئة آمنة وجاذبة",
+            detailed: "الهدف التفصيلي: رفع نسبة رعاية الطلاب صحيا ونفسيا 10%",
+            progs: [
+                {n:"التواصل مع أولياء الأمور", t:"-", r:"الموجه الصحي", k:"التواصل"},
+                {n:"الإسعافات الأولية", t:"مستمر", r:"الموجه الصحي", k:"السجل"},
+                {n:"معرفة الحالات المرضية ومتابعتها", t:"بداية العام", r:"الموجه الطلابي/الصحي", k:"السجل"},
+                {n:"برنامج أصدقاء سلامة", t:"مستمر", r:"الموجه الصحي", k:"الاستبانة"},
+                {n:"التوعوي للتعامل مع بعض الحالات", t:"الأول", r:"الموجه الصحي", k:"مشهد"},
+                {n:"برنامج صحة اليافعين", t:"الأول", r:"الموجه الصحي", k:"مشهد"},
+                {n:"رسائل تثقيفية لأولياء الأمور", t:"مستمر", r:"الموجه الصحي", k:"تقرير"},
+                {n:"تهيئة الصفوف الانتقالية", t:"بداية العام", r:"الموجه الطلابي", k:"تقرير"},
+                {n:"المجلس الطلابي", t:"مستمر", r:"الموجه الطلابي", k:"تقرير"},
+                {n:"خفض العنف (رفق)", t:"مستمر", r:"الموجه الطلابي", k:"تقرير"}
+            ]
+        },
+        {
+            domain: "المجال الخامس: الشراكة المجتمعية",
+            general: "الهدف العام: تعزيز مشاركة المجتمع",
+            detailed: "الهدف التفصيلي: تفعيل دور الأسرة في دعم التعلم 10%",
+            progs: [
+                {n:"الرسائل النصية المحفزة", t:"-", r:"الإداريون", k:"التواصل"},
+                {n:"رسائل التواصل الاجتماعي", t:"مستمر", r:"المعلمون", k:"التواصل"},
+                {n:"إنشاء مجلس الآباء", t:"الفصل الأول", r:"إدارة المدرسة", k:"الاجتماعات"},
+                {n:"نشر قواعد السلوك والمواظبة", t:"بداية العام", r:"الموجه الطلابي", k:"التوقيع"}
+            ]
+        },
+        {
+            domain: "المجال الخامس: الشراكة المجتمعية",
+            general: "الهدف العام: تعزيز مشاركة المجتمع",
+            detailed: "الهدف التفصيلي: إقامة شراكات مع مؤسسات المجتمع 5%",
+            progs: [
+                {n:"البحث عن شراكات مجتمعية", t:"مستمر", r:"لجنة التميز", k:"الفعاليات"}
+            ]
+        }
+    ];
+
+    const defImp = [
+        {
+            domain: "المجال: التدريس",
+            general: "العنصر: التنوع في أساليب التدريس لدى المعلمين",
+            detailed: "الاحتياج: تفعيل دور مجتمعات التعلم المهنية وتركيز المعلمين على الأساليب الحديثة",
+            progs: [
+                {n:"خطة الزيارات التبادلية بين المعلمين", t:"الأسبوع 2-4", r:"لجنة التميز", k:"سجل الزيارات"},
+                {n:"ورش عمل في أساليب التعلم الحديثة", t:"الأسبوع 2-4", r:"لجنة التميز", k:"تقرير الورشة"}
+            ]
+        },
+        {
+            domain: "المجال: التدريس",
+            general: "العنصر: تقويم التدريس",
+            detailed: "الاحتياج: التنويع في أساليب التقويم واستخدام البدائل، وتقديم التغذية الراجعة",
+            progs: [
+                {n:"استخدام أساليب وأدوات تقويم متنوعة وفاعلة", t:"طوال العام", r:"معلمو المواد", k:"أدوات التقويم"},
+                {n:"تقديم التغذية الراجعة للمتعلمين بانتظام", t:"طوال العام", r:"معلمو المواد", k:"أعمال الطلاب"},
+                {n:"دورات تدريبية مسجلة عن التقويم", t:"طوال العام", r:"معلمو المواد", k:"شهادات الحضور"}
+            ]
+        },
+        {
+            domain: "المجال: نواتج التعلم",
+            general: "العنصر: رفع نسبة إتقان الطلاب في الاختبارات الوطنية",
+            detailed: "الاحتياج: رفع نسبة إتقان الطلاب في الاختبارات الوطنية (نافس) بنسبة 5%",
+            progs: [
+                {n:"تحليل نتائج الطلاب في نافس", t:"مستمر", r:"لجنة التحصيل", k:"ملف التحليل"},
+                {n:"رسائل توعوية نصية لأولياء الأمور", t:"الأسبوع 2", r:"إدارة التعليم", k:"الرسائل"},
+                {n:"تطبيق دليل مهارات اختبار نافس", t:"مستمر", r:"المعلمون", k:"الدليل"},
+                {n:"نماذج اختبارات محاكية لنافس", t:"مستمر", r:"معلمو المواد", k:"نماذج الاختبارات"},
+                {n:"تدريب الطلاب في الصفوف المستهدفة", t:"مستمر", r:"معلمو المواد", k:"سجل التدريب"}
+            ]
+        },
+        {
+            domain: "المجال: التوجيه الطلابي",
+            general: "العنصر: دافعية المتعلمين للتعلم",
+            detailed: "الاحتياج: تعزيز دافعية المتعلمين للتعلم",
+            progs: [
+                {n:"تكريم المتفوقين", t:"الأسبوع 5", r:"التوجيه الطلابي", k:"صور التكريم"},
+                {n:"نشرات ووسائط توعوية", t:"مستمر", r:"التوجيه الطلابي", k:"النشرات"}
+            ]
+        },
+        {
+            domain: "المجال: الأنشطة المدرسية",
+            general: "العنصر: عقد الشراكات المجتمعية",
+            detailed: "الاحتياج: تعزيز الشراكة المجتمعية لدعم التعلم",
+            progs: [
+                {n:"التواصل مع رجال الأعمال والجهات الخيرية", t:"مستمر", r:"رائد النشاط", k:"عقود الشراكة"}
+            ]
+        },
+        {
+            domain: "المجال: الأنشطة المدرسية",
+            general: "العنصر: تنمية المهارات الرقمية",
+            detailed: "الاحتياج: تعزيز مهارات استخدام التقنية الرقمية",
+            progs: [
+                {n:"برامج وأنشطة تدعم المهارات الرقمية", t:"مستمر", r:"رائد النشاط", k:"خطط وتقارير"}
+            ]
+        }
+    ];
+
+    // --- State ---
+    let currentTab = 'op';
+    let appData = { op: JSON.parse(JSON.stringify(defOp)), imp: JSON.parse(JSON.stringify(defImp)), logos: {r:null, l:null}, texts: {} };
+
+    // --- Functions ---
+    function init() {
+        const saved = localStorage.getItem('schoolPlanV8_Fixed');
+        if(saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if(parsed.op) appData.op = parsed.op;
+                if(parsed.imp) appData.imp = parsed.imp;
+                if(parsed.logos) appData.logos = parsed.logos;
+                if(parsed.texts) appData.texts = parsed.texts;
+            } catch(e) {}
+        }
+        if(appData.logos.r) applyLogo('r', appData.logos.r);
+        if(appData.logos.l) applyLogo('l', appData.logos.l);
+        
+        restoreTexts();
+        render('op', appData.op, 'cont-op');
+        render('imp', appData.imp, 'cont-imp');
+        updateCoverTitle('op');
+    }
+
+    function save() {
+        localStorage.setItem('schoolPlanV8_Fixed', JSON.stringify(appData));
+        const msg = document.getElementById('auto-save-msg');
+        msg.style.opacity = 1; setTimeout(()=>msg.style.opacity=0, 1500);
+    }
+
+    function render(type, data, contId) {
+        const cont = document.getElementById(contId);
+        cont.innerHTML = '';
+        data.forEach((blk, bIdx) => {
+            const sec = document.createElement('div');
+            sec.className = 'section-block';
+            sec.innerHTML = `
+                <button class="del-domain-btn ctrl-col" onclick="deleteDomain('${type}', ${bIdx})">حذف المجال 🗑️</button>
+                <div class="domain-strip" contenteditable="true" oninput="updHead('${type}',${bIdx},'domain',this.innerText)">${blk.domain}</div>
+                <div class="goal-box">
+                    <div class="goal-txt"><strong>1:</strong> <span contenteditable="true" oninput="updHead('${type}',${bIdx},'general',this.innerText)">${blk.general}</span></div>
+                    <div class="goal-txt"><strong>2:</strong> <span contenteditable="true" oninput="updHead('${type}',${bIdx},'detailed',this.innerText)">${blk.detailed}</span></div>
+                </div>
+            `;
+            const tbl = document.createElement('table');
+            tbl.innerHTML = `
+                <thead>
+                    <tr>
+                        <th width="5%">م</th>
+                        <th width="30%">البرنامج</th>
+                        <th width="10%">الزمن</th>
+                        <th width="15%">المسؤول</th>
+                        <th width="15%">المؤشر</th>
+                        <th width="10%">الحالة</th>
+                        <th width="8%">شواهد</th>
+                        <th width="7%" class="ctrl-col">تحكم</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = tbl.querySelector('tbody');
+            blk.progs.forEach((p, pIdx) => {
+                if(p.s === undefined) p.s = 0; if(p.l === undefined) p.l = '';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td contenteditable="true" oninput="updProg('${type}',${bIdx},${pIdx},'m',this.innerText)">${pIdx+1}</td>
+                    <td contenteditable="true" oninput="updProg('${type}',${bIdx},${pIdx},'n',this.innerText)">${p.n}</td>
+                    <td contenteditable="true" oninput="updProg('${type}',${bIdx},${pIdx},'t',this.innerText)">${p.t}</td>
+                    <td contenteditable="true" oninput="updProg('${type}',${bIdx},${pIdx},'r',this.innerText)">${p.r}</td>
+                    <td contenteditable="true" oninput="updProg('${type}',${bIdx},${pIdx},'k',this.innerText)">${p.k}</td>
+                    <td><button class="st-btn s-${p.s}" onclick="cycleSt('${type}',${bIdx},${pIdx},this)">${getStTxt(p.s)}</button></td>
+                    <td><div class="evi-box" onclick="addEvi('${type}',${bIdx},${pIdx},this)">
+                        <canvas id="qr-${type}-${bIdx}-${pIdx}" style="display:${p.l?'block':'none'};width:50px"></canvas>
+                        <span class="evi-link" style="display:${p.l?'block':'none'}">رابط</span>
+                        <span class="evi-hint" style="display:${p.l?'none':'block'}">+</span>
+                    </div></td>
+                    <td class="ctrl-col" style="white-space:nowrap">
+                        <button class="ctrl-btn" onclick="moveProg('${type}',${bIdx},${pIdx},-1)" title="لأعلى">⬆️</button>
+                        <button class="ctrl-btn" onclick="moveProg('${type}',${bIdx},${pIdx},1)" title="لأسفل">⬇️</button>
+                        <button class="ctrl-btn ctrl-del" onclick="deleteProg('${type}',${bIdx},${pIdx})" title="حذف">✖</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                if(p.l) setTimeout(()=>drawQR(`qr-${type}-${bIdx}-${pIdx}`, p.l), 50);
+            });
+            sec.appendChild(tbl);
+            // زر إضافة صف جديد
+            const addRowBtn = document.createElement('button');
+            addRowBtn.className = 'add-row-btn ctrl-col';
+            addRowBtn.innerText = '+ إضافة برنامج جديد';
+            addRowBtn.onclick = () => addNewProg(type, bIdx);
+            sec.appendChild(addRowBtn);
+
+            cont.appendChild(sec);
+        });
+    }
+
+    // --- Dynamic Add/Remove/Move Logic ---
+
+    // إضافة مجال جديد
+    window.addNewDomain = (type) => {
+        appData[type].push({
+            domain: "عنوان المجال الجديد...",
+            general: "الهدف العام...",
+            detailed: "الهدف التفصيلي...",
+            progs: [ {n:"", t:"", r:"", k:""} ]
+        });
+        save();
+        render(type, appData[type], type === 'op' ? 'cont-op' : 'cont-imp');
+    }
+
+    // حذف مجال
+    window.deleteDomain = (type, bIdx) => {
+        if(confirm("هل أنت متأكد من حذف هذا المجال وكافة برامجه؟")) {
+            appData[type].splice(bIdx, 1);
+            save();
+            render(type, appData[type], type === 'op' ? 'cont-op' : 'cont-imp');
+        }
+    }
+
+    // إضافة برنامج (صف)
+    window.addNewProg = (type, bIdx) => {
+        appData[type][bIdx].progs.push({n:"", t:"", r:"", k:"", s:0, l:""});
+        save();
+        render(type, appData[type], type === 'op' ? 'cont-op' : 'cont-imp');
+    }
+
+    // حذف برنامج
+    window.deleteProg = (type, bIdx, pIdx) => {
+        if(confirm("حذف هذا البرنامج؟")) {
+            appData[type][bIdx].progs.splice(pIdx, 1);
+            save();
+            render(type, appData[type], type === 'op' ? 'cont-op' : 'cont-imp');
+        }
+    }
+
+    // ترتيب البرامج (تحريك للأعلى والأسفل)
+    window.moveProg = (type, bIdx, pIdx, dir) => {
+        const arr = appData[type][bIdx].progs;
+        const newIdx = pIdx + dir;
+        if(newIdx < 0 || newIdx >= arr.length) return; // حدود المصفوفة
+        
+        // تبديل العناصر
+        [arr[pIdx], arr[newIdx]] = [arr[newIdx], arr[pIdx]];
+        
+        save();
+        render(type, appData[type], type === 'op' ? 'cont-op' : 'cont-imp');
+    }
+
+
+    // --- Core Logic ---
+    function updateCoverTitle(tab) {
+        const titleEl = document.getElementById('cover-main-title');
+        const key = 'mt_' + tab;
+        const defaultTitle = tab === 'op' ? 'متابعة الخطة التشغيلية' : 'خطة التحسين (الممارسات الإشرافية)';
+        titleEl.innerText = appData.texts[key] || defaultTitle;
+    }
+
+    window.svTxt = (id, val) => { 
+        if(id === 'mt') appData.texts['mt_' + currentTab] = val;
+        else appData.texts[id] = val; 
+        save(); 
+    }
+
+    function restoreTexts() {
+        for(let [k,v] of Object.entries(appData.texts)) {
+            if(k.startsWith('mt_')) continue; 
+            const el = document.querySelector(`[oninput*="'${k}'"]`);
+            if(el) el.innerText = v;
+        }
+    }
+
+    window.updHead = (type, bIdx, key, val) => { appData[type][bIdx][key] = val; save(); }
+    window.updProg = (type, bIdx, pIdx, key, val) => { appData[type][bIdx].progs[pIdx][key] = val; save(); }
+    window.cycleSt = (type, bIdx, pIdx, btn) => {
+        let n = (appData[type][bIdx].progs[pIdx].s + 1) % 3;
+        appData[type][bIdx].progs[pIdx].s = n;
+        btn.className = `st-btn s-${n}`; btn.innerText = getStTxt(n); save();
+    }
+    function getStTxt(s) { return ['لم يبدأ 🔴','مكتمل 🟢','جاري 🔵'][s]; }
+
+    window.addEvi = (type, bIdx, pIdx, box) => {
+        if(event.target.classList.contains('evi-link')) { window.open(appData[type][bIdx].progs[pIdx].l, '_blank'); return; }
+        let lnk = prompt("أدخل رابط الشاهد:", appData[type][bIdx].progs[pIdx].l);
+        if(lnk !== null) {
+            appData[type][bIdx].progs[pIdx].l = lnk; save();
+            const cid = `qr-${type}-${bIdx}-${pIdx}`;
+            if(lnk) {
+                drawQR(cid, lnk);
+                box.querySelector('canvas').style.display='block';
+                box.querySelector('.evi-link').style.display='block';
+                box.querySelector('.evi-hint').style.display='none';
+            } else {
+                box.querySelector('canvas').style.display='none';
+                box.querySelector('.evi-link').style.display='none';
+                box.querySelector('.evi-hint').style.display='block';
+            }
+        }
+    }
+    function drawQR(id, txt) { new QRious({element:document.getElementById(id), value:txt, size:60}); }
+
+    window.upLogo = (e, side) => {
+        const f = e.target.files[0];
+        if(f) {
+            const r = new FileReader();
+            r.onload = (ev) => {
+                appData.logos[side] = ev.target.result;
+                applyLogo(side, ev.target.result);
+                save();
+            };
+            r.readAsDataURL(f);
+        }
+    }
+    function applyLogo(side, src) {
+        document.getElementById(`img-${side}`).src = src; document.getElementById(`img-${side}`).style.display = 'block'; document.getElementById(`hint-${side}`).style.display = 'none';
+        document.getElementById(`head-img-${side}`).src = src; document.getElementById(`head-img-${side}`).style.display = 'block';
+        document.getElementById(`imp-img-${side}`).src = src; document.getElementById(`imp-img-${side}`).style.display = 'block';
+    }
+
+    window.switchTab = (t) => {
+        currentTab = t;
+        document.querySelectorAll('.inner-page').forEach(e=>e.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+        document.getElementById(`page-${t}`).classList.add('active');
+        document.getElementById(`btn-${t}`).classList.add('active');
+        updateCoverTitle(t);
+    }
+    window.setMode = (m) => {
+        document.body.className = `mode-${m}`;
+        document.getElementById('print-css').innerHTML = `@page { size: A4 ${m}; }`;
+        setTimeout(()=>window.print(), 500);
+    }
+    window.resetAll = () => { if(confirm('تحذير: سيتم مسح كل البيانات!')) { localStorage.removeItem('schoolPlanV8_Fixed'); location.reload(); } }
+    window.downloadBackup = () => {
+        const dataStr = JSON.stringify(appData);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', 'نسخة_الراشدون_V8.json');
+        linkElement.click();
+    }
+    window.restoreBackup = (event) => {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const contents = JSON.parse(e.target.result);
+                if(contents.op) { appData = contents; save(); location.reload(); }
+                else { alert('الملف غير صالح'); }
+            } catch(err) { alert('خطأ في الملف'); }
+        };
+        reader.readAsText(file);
+    }
+
+    init();
+</script>
+</body>
+</html>
