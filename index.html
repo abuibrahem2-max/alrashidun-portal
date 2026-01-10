@@ -7,22 +7,63 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --primary-color: #2563eb; --bg-gradient-start: #f8fafc; --bg-gradient-end: #e2e8f0; --active-nav: #2563eb; }
+        
+        /* إصلاح المشكلة هنا: استخدام dvh لضبط الارتفاع بدقة مع كروم */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .app-container { display: flex; flex-direction: column; height: 100vh; }
-        .main-view { flex: 1; position: relative; width: 100%; height: 100%; }
+        body, html { margin: 0; padding: 0; height: 100%; height: 100dvh; width: 100%; overflow: hidden; background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        .app-container { width: 100%; height: 100%; position: relative; }
+
+        /* منطقة العرض الرئيسية (تأخذ المساحة العلوية وتترك مكان للشريط السفلي) */
+        .main-view { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            bottom: 65px; /* نترك مسافة لارتفاع الشريط السفلي */
+            overflow: hidden; 
+            z-index: 1;
+        }
+        
         iframe { width: 100%; height: 100%; border: none; display: block; background: #fff; }
         
-        #home-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%); overflow-y: auto; padding: 20px; z-index: 50; display: flex; flex-direction: column; align-items: center; }
+        #home-screen { 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%); 
+            overflow-y: auto; 
+            padding: 20px; 
+            padding-bottom: 80px; /* مسافة أمان إضافية في الأسفل */
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        /* --- الشريط السفلي (تم تثبيته بالقوة) --- */
+        .bottom-nav { 
+            position: fixed; /* تثبيت مطلق */
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 65px; 
+            background: white; 
+            border-top: 1px solid #e2e8f0; 
+            display: flex; 
+            overflow-x: auto; 
+            white-space: nowrap; 
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
+            z-index: 1000; /* طبقة عليا جداً */
+        }
+        .bottom-nav::-webkit-scrollbar { display: none; }
+
+        /* باقي التنسيقات كما هي */
         .home-header { margin-top: 35px; margin-bottom: 20px; text-align: center; width: 100%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary-color); }
         .home-header h2 { color: #0f172a; margin: 0; font-size: 1.3rem; font-weight: 800; }
         .home-header p { color: #64748b; margin: 5px 0 0; font-size: 0.8rem; }
         .hijri-date { margin-top: 10px; font-size: 0.9rem; color: var(--primary-color); font-weight: bold; background: #f1f5f9; padding: 5px 15px; border-radius: 20px; display: inline-block; }
-        
         .quick-note-area { width: 100%; max-width: 420px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .quick-note-title { font-size: 0.85rem; font-weight: bold; color: #b45309; margin-bottom: 5px; }
         .quick-note-input { width: 100%; border: none; background: transparent; resize: none; font-family: inherit; font-size: 0.9rem; color: #4b5563; outline: none; min-height: 60px; }
-        
         .section-title { width: 100%; max-width: 420px; text-align: right; font-size: 0.95rem; color: #334155; font-weight: 700; margin: 15px 0 10px 0; border-right: 4px solid var(--primary-color); padding-right: 10px; }
         .apps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 100%; max-width: 420px; padding-bottom: 10px; }
         .app-icon { background: white; border-radius: 16px; padding: 15px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s; height: 100px; position: relative; overflow: hidden; border: 1px solid #f1f5f9; }
@@ -30,12 +71,9 @@
         .app-icon i { font-size: 2rem; margin-bottom: 10px; }
         .app-icon span { font-size: 0.7rem; font-weight: 700; color: #475569; text-align: center; line-height: 1.3; }
         .c-blue i { color: #2563eb; } .c-teal i { color: #0d9488; } .c-purple i { color: #7c3aed; } .c-orange i { color: #d97706; } .c-red i { color: #dc2626; } .c-pink i { color: #db2777; } .c-gray i { color: #64748b; }
-        
         .designer-credit { margin-top: 30px; margin-bottom: 80px; text-align: center; color: #94a3b8; font-size: 0.8rem; border-top: 1px solid #e2e8f0; padding-top: 15px; width: 80%; }
         .designer-credit span { display: block; font-weight: bold; color: var(--primary-color); margin-top: 5px; font-size: 0.9rem; }
         
-        .bottom-nav { height: 65px; background: white; border-top: 1px solid #e2e8f0; display: flex; overflow-x: auto; white-space: nowrap; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); z-index: 100; }
-        .bottom-nav::-webkit-scrollbar { display: none; }
         .nav-item { flex: 0 0 auto; width: 70px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; background: none; border: none; cursor: pointer; }
         .nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
         .nav-item span { font-size: 0.65rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; max-width: 65px; }
@@ -48,18 +86,15 @@
         .settings-section h4 { margin: 0 0 10px 0; color: #334155; font-size: 1rem; border-right: 3px solid var(--primary-color); padding-right: 8px; }
         .form-group { margin-bottom: 10px; }
         .form-input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; }
+        .color-options { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .color-btn { width: 35px; height: 35px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+        .color-btn.selected { border-color: #334155; transform: scale(1.1); }
+        .bg-blue { background: #2563eb; } .bg-green { background: #16a34a; } .bg-purple { background: #7c3aed; } .bg-red { background: #dc2626; } .bg-dark { background: #1e293b; }
         .btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .btn-primary { background: #2563eb; color: white; }
         .btn-success { background: #10b981; color: white; }
         .btn-danger { background: #ef4444; color: white; font-size: 0.8rem; width: auto; padding: 5px 10px; }
         .btn-move { background: #e2e8f0; color: #334155; width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; }
-        
-        /* ألوان */
-        .color-options { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-        .color-btn { width: 35px; height: 35px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
-        .color-btn.selected { border-color: #334155; transform: scale(1.1); }
-        .bg-blue { background: #2563eb; } .bg-green { background: #16a34a; } .bg-purple { background: #7c3aed; } .bg-red { background: #dc2626; } .bg-dark { background: #1e293b; }
-
         .sortable-item { display: flex; flex-direction: column; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
         .sortable-row-top { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
         .sortable-controls { display: flex; align-items: center; }
@@ -110,9 +145,9 @@
             </div>
             
             <div class="settings-section">
-                <h4>🎨 المظهر</h4>
-                <div class="form-group"><input type="text" id="settings-title" class="form-input" placeholder="العنوان"></div>
-                <div class="form-group"><input type="text" id="settings-designer" class="form-input" placeholder="المصمم"></div>
+                <h4>🎨 المظهر والعناوين</h4>
+                <div class="form-group"><label>العنوان:</label><input type="text" id="settings-title" class="form-input"></div>
+                <div class="form-group"><label>المصمم:</label><input type="text" id="settings-designer" class="form-input"></div>
                 <div class="color-options">
                     <div class="color-btn bg-blue" onclick="selectColor('#2563eb', this)"></div>
                     <div class="color-btn bg-green" onclick="selectColor('#16a34a', this)"></div>
@@ -125,24 +160,24 @@
 
             <div class="settings-section">
                 <h4>🔃 الترتيب والشريط السفلي</h4>
-                <p style="font-size:0.8rem; color:#64748b;">(صح) = إظهار في الشريط السفلي</p>
+                <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">ضع علامة (صح) لتثبيت الأداة في الشريط السفلي.</p>
                 <div id="tools-sort-list"></div>
                 <button class="btn btn-primary" onclick="saveToolsSettings()">حفظ التغييرات</button>
                 <button class="btn btn-danger" onclick="resetToolsToDefault()">استعادة الافتراضي</button>
             </div>
 
             <div class="settings-section">
-                <h4>🔗 إضافة رابط</h4>
-                <div class="form-group"><input type="text" id="new-link-title" class="form-input" placeholder="الاسم"></div>
+                <h4>🔗 إضافة رابط جديد</h4>
+                <div class="form-group"><input type="text" id="new-link-title" class="form-input" placeholder="اسم الموقع"></div>
                 <div class="form-group"><input type="url" id="new-link-url" class="form-input" placeholder="الرابط"></div>
-                <button class="btn btn-success" onclick="addNewLink()">+ إضافة</button>
+                <button class="btn btn-success" onclick="addNewLink()">+ إضافة الرابط</button>
                 <div style="margin-top:15px;" id="settings-links-list"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // المتغيرات والمفتاح الجديد للذاكرة لضمان بداية نظيفة
+        // مفاتيح جديدة للذاكرة لضمان بداية نظيفة وتجنب المشاكل السابقة
         const STORAGE_KEY_TOOLS = 'myApp_data_v3_clean'; 
         const STORAGE_KEY_GENERAL = 'myApp_general_v3_clean';
         const STORAGE_KEY_LINKS = 'myApp_links_v3_clean';
@@ -154,7 +189,7 @@
         let currentThemeColor = '#2563eb';
         let customLinks = [];
 
-        // القائمة الافتراضية الثابتة
+        // الأدوات الافتراضية
         const defaultTools = [
             { id: 'platform', title: 'المنصة المدرسية', icon: 'fa-laptop-house', color: 'c-blue', url: 'https://abuibrahem2-max.github.io/my-school-site/', external: false, inBottomBar: true },
             { id: 'monitor', title: 'رصد استراتيجية', icon: 'fa-pen-to-square', color: 'c-teal', url: 'https://abuibrahem2-max.github.io/school-reports/index.html', external: false, inBottomBar: true },
@@ -174,12 +209,16 @@
         let currentTools = [];
 
         document.addEventListener('DOMContentLoaded', () => {
-            // تحميل البيانات بصمت
-            loadGeneralSettings();
-            loadTools();
-            loadCustomLinks();
-            updateHijriDate();
-            loadNote();
+            try {
+                loadGeneralSettings();
+                loadTools();
+                loadCustomLinks();
+                updateHijriDate();
+                loadNote();
+            } catch (e) {
+                localStorage.removeItem(STORAGE_KEY_TOOLS);
+                location.reload();
+            }
         });
 
         function loadTools() {
@@ -187,19 +226,13 @@
             if (savedTools) {
                 try {
                     currentTools = JSON.parse(savedTools);
-                    // التحقق من صحة البيانات
-                    if(!Array.isArray(currentTools) || currentTools.length === 0) {
-                        throw new Error("بيانات تالفة");
-                    }
+                    if(!Array.isArray(currentTools) || currentTools.length === 0) throw new Error("empty");
+                    currentTools.forEach(t => { if(t.inBottomBar === undefined) t.inBottomBar = false; });
                 } catch(e) {
-                    // في حال الخطأ نعود للافتراضي بصمت
                     currentTools = JSON.parse(JSON.stringify(defaultTools));
-                    localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(currentTools));
                 }
             } else {
-                // أول مرة تشغيل
                 currentTools = JSON.parse(JSON.stringify(defaultTools));
-                localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(currentTools));
             }
             renderMainGrid();
             renderBottomNav();
@@ -241,17 +274,24 @@
         }
 
         function openSettings() {
-            // تعبئة البيانات في النافذة
-            const titleEl = document.getElementById('app-title-display');
-            const designerEl = document.getElementById('designer-name-display');
-            
-            document.getElementById('settings-title').value = titleEl ? titleEl.innerText : '';
-            document.getElementById('settings-designer').value = designerEl ? designerEl.innerText : '';
-            
-            renderToolsSortList();
-            renderSettingsLinksList();
-            settingsModal.style.display = 'flex';
+            try {
+                document.getElementById('settings-title').value = document.getElementById('app-title-display').innerText;
+                const sub = document.getElementById('app-subtitle-display');
+                if(sub) document.getElementById('settings-subtitle').value = sub.innerText;
+                document.getElementById('settings-designer').value = document.getElementById('designer-name-display').innerText;
+                
+                renderToolsSortList();
+                renderSettingsLinksList();
+                settingsModal.style.display = 'flex';
+            } catch(e) {
+                // في حالة وجود خطأ، نعيد التحميل الافتراضي بدون رسالة مزعجة
+                currentTools = JSON.parse(JSON.stringify(defaultTools));
+                renderToolsSortList();
+                settingsModal.style.display = 'flex';
+            }
         }
+
+        function closeSettings() { settingsModal.style.display = 'none'; }
 
         function renderToolsSortList() {
             const list = document.getElementById('tools-sort-list');
@@ -307,7 +347,7 @@
         }
 
         function resetToolsToDefault() {
-            if(confirm("هل تريد استعادة الترتيب الافتراضي؟")) {
+            if(confirm("استعادة الافتراضي؟")) {
                 currentTools = JSON.parse(JSON.stringify(defaultTools));
                 localStorage.setItem(STORAGE_KEY_TOOLS, JSON.stringify(currentTools));
                 renderMainGrid();
@@ -316,8 +356,6 @@
             }
         }
 
-        // --- باقي الوظائف (المظهر، الروابط، الخ) ---
-        function closeSettings() { settingsModal.style.display = 'none'; }
         function goHome() {
             homeScreen.style.display = 'flex';
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
@@ -338,6 +376,7 @@
         function saveAppearanceSettings() {
             const settings = {
                 title: document.getElementById('settings-title').value,
+                subtitle: document.getElementById('settings-subtitle')?.value || '',
                 designer: document.getElementById('settings-designer').value,
                 theme: currentThemeColor
             };
@@ -347,6 +386,7 @@
         }
         function applyGeneralSettings(settings) {
             if(settings.title) document.getElementById('app-title-display').innerText = settings.title;
+            if(settings.subtitle) { const sub = document.getElementById('app-subtitle-display'); if(sub) sub.innerText = settings.subtitle; }
             if(settings.designer) document.getElementById('designer-name-display').innerText = settings.designer;
             if(settings.theme) {
                 currentThemeColor = settings.theme;
