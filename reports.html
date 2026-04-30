@@ -305,7 +305,7 @@
 
                     <div class="flex items-center gap-2 mb-2 bg-emerald-50 p-1.5 rounded border border-emerald-200">
                         <input type="checkbox" id="imagesStartSecondPage" onchange="updateSettings()" class="w-3 h-3 accent-emerald-600 cursor-pointer">
-                        <label for="imagesStartSecondPage" class="text-[10px] font-bold text-emerald-800 cursor-pointer select-none">ة</label>
+                        <label for="imagesStartSecondPage" class="text-[10px] font-bold text-emerald-800 cursor-pointer select-none">جعل الصفحة الأولى للبيانات فقط، وبدء الصور من الصفحة الثانية</label>
                     </div>
 
                     <div class="relative cursor-pointer bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-lg p-3 text-center hover:bg-indigo-100 transition mb-2">
@@ -564,8 +564,7 @@
                     </div>
 
                     ${appState.config.imagesStartSecondPage ? `
-                   
-                    </div>` : `
+                    <div class="flex-1 min-h-0"></div>` : `
                     <div class="flex-1 min-h-0 flex flex-col pt-1">
                         ${renderImagesGrid(0, appState.config.firstPageImgCount)}
                     </div>`}
